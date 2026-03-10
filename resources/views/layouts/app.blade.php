@@ -1,45 +1,36 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENVYCOM</title>
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <style>
+        body { background: #f5f6f8; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background: #0c2b45; }
+        .logo { height: 40px; }
+        .btn-envy { background: #d7ff00; border: none; font-weight: 600; }
+        .product-card { border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.08); padding: 15px; background: white; }
+        .product-card img { height: 120px; object-fit: contain; }
+        .section-title { font-weight: 700; margin-top: 60px; text-align: center; }
+        .service-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,.08); text-align: center; }
+        .brand-card { background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,.08); }
+        .team-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,.1); }
+        .team-card img { width: 80px; height: 80px; border-radius: 50%; }
+    </style>
+</head>
+<body>
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
-            <div class="min-h-screen bg-gray-100">
-    {{-- Borra o comenta la de Breeze: @include('layouts.navigation') --}}
-    
-    {{-- Agrega la tuya --}}
-    @include('partials.navbar') 
+    @include('layouts.navigation')
 
-    <main>
-        @yield('content') {{-- O {{ $slot }} si usas componentes --}}
+    <main class="container mt-4 mb-5">
+        @yield('content')
     </main>
-</div>
 
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endisset
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-            <!-- Page Content -->
-            <main>
-    @yield('content')
-</main>
-        </div>
-    </body>
+</body>
 </html>
