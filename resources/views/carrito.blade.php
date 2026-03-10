@@ -1,3 +1,12 @@
+@php
+    $subtotal = 0;
+    foreach ($carrito as $item) {
+        $subtotal += $item['precio'] * $item['cantidad'];
+    }
+    $envio = 0;
+    $total = $subtotal + $envio;
+@endphp
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -166,6 +175,9 @@
             color: #dc3545;
             text-decoration: none;
             font-weight: 600;
+            background: none;
+            border: none;
+            padding: 0;
         }
 
         .remove-link:hover{
@@ -194,7 +206,7 @@
             <div class="ms-auto d-flex align-items-center gap-3">
                 <a href="{{ url('/') }}" class="text-white text-decoration-none">Inicio</a>
                 <a href="{{ url('/productos') }}" class="text-white text-decoration-none">Productos</a>
-                <a href="{{ url('/carrito') }}" class="text-white text-decoration-none">
+                <a href="{{ route('carrito') }}" class="text-white text-decoration-none">
                     <i class="bi bi-cart3 fs-5"></i>
                 </a>
             </div>
@@ -213,10 +225,15 @@
             </a>
         </div>
 
+        @if(session('success'))
+            <div class="alert alert-success rounded-4 shadow-sm">
+                {{ session('success') }}
+            </div>
+        @endif
+
         <div class="row g-4">
             <div class="col-lg-8">
 
-                {{-- Si el carrito está vacío, muestra esto --}}
                 @if(empty($carrito) || count($carrito) === 0)
                     <div class="cart-card empty-cart">
                         <i class="bi bi-cart-x"></i>
@@ -248,14 +265,14 @@
 
                                     <div class="col-md-2 col-6">
                                         <label class="form-label small text-secondary mb-1">Cantidad</label>
-                                        <form action="{{ url('/carrito/actualizar') }}" method="POST">
+                                        <form action="{{ route('carrito.update', $item['id']) }}" method="POST">
                                             @csrf
-                                            <input type="hidden" name="id" value="{{ $item['id'] }}">
                                             <input type="number"
                                                    name="cantidad"
                                                    value="{{ $item['cantidad'] }}"
                                                    min="1"
-                                                   class="form-control qty-box">
+                                                   class="form-control qty-box"
+                                                   onchange="this.form.submit()">
                                         </form>
                                     </div>
 
@@ -267,9 +284,13 @@
                                     </div>
 
                                     <div class="col-md-2 col-12 text-md-end">
-                                        <a href="{{ url('/carrito/eliminar/' . $item['id']) }}" class="remove-link">
-                                            <i class="bi bi-trash"></i> Eliminar
-                                        </a>
+                                        <form action="{{ route('carrito.remove', $item['id']) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="remove-link">
+                                                <i class="bi bi-trash"></i> Eliminar
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -282,17 +303,6 @@
             <div class="col-lg-4">
                 <div class="summary-card">
                     <h3 class="summary-title mb-4">Resumen del pedido</h3>
-
-                    @php
-                        $subtotal = 0;
-                        if(!empty($carrito)){
-                            foreach($carrito as $item){
-                                $subtotal += $item['precio'] * $item['cantidad'];
-                            }
-                        }
-                        $envio = !empty($carrito) && $subtotal > 0 ? 0 : 0;
-                        $total = $subtotal + $envio;
-                    @endphp
 
                     <div class="summary-row">
                         <span>Subtotal</span>
@@ -328,6 +338,18 @@
                             Seguir comprando
                         </a>
                     </div>
+
+                    @if(!empty($carrito) && count($carrito) > 0)
+                        <div class="d-grid mt-2">
+                            <form action="{{ route('carrito.clear') }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-envy w-100">
+                                    Vaciar carrito
+                                </button>
+                            </form>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
