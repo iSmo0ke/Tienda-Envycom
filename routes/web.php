@@ -13,6 +13,15 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+//Productos de home
+Route::get('/', function () {
+    // Traemos los últimos 18 productos para tener 3 "páginas" en el carrusel (6 por página)
+    $productosDestacados = Product::latest()->take(18)->get();
+    
+    return view('welcome', compact('productosDestacados')); 
+    // Nota: cambia 'welcome' por el nombre real de tu vista si se llama diferente
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
