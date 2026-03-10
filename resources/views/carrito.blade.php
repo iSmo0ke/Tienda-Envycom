@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito de compras | ENVYCOM</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <style>
+        :root{
+            --envy-lime: #dfff00;
+            --envy-dark: #121012;
+            --envy-gray: #4a4a4a;
+            --envy-blue: #024ad8;
+            --envy-light: #c6e5f8;
+            --bg-soft: #f5f6f8;
+        }
+
+        body{
+            background: var(--bg-soft);
+            font-family: 'Segoe UI', sans-serif;
+            color: var(--envy-dark);
+        }
+
+        .navbar-envy{
+            background: linear-gradient(90deg, #081c3a 0%, #0b2b57 100%);
+        }
+
+        .navbar-brand{
+            font-weight: 800;
+            letter-spacing: .5px;
+            color: #fff !important;
+        }
+
+        .navbar-brand span{
+            color: var(--envy-lime);
+        }
+
+        .cart-title{
+            font-weight: 800;
+            color: #0b2b57;
+        }
+
+        .cart-card,
+        .summary-card{
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 4px 18px rgba(0,0,0,.06);
+            border: 1px solid #ececec;
+        }
+
+        .cart-item{
+            padding: 22px 18px;
+            border-bottom: 1px solid #ececec;
+        }
+
+        .cart-item:last-child{
+            border-bottom: none;
+        }
+
+        .product-img{
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+            border-radius: 14px;
+            background: #fff;
+            border: 1px solid #eee;
+            padding: 8px;
+        }
+
+        .brand{
+            font-weight: 800;
+            color: #102a5d;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .product-name{
+            color: var(--envy-gray);
+            margin-bottom: 8px;
+        }
+
+        .product-price{
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #0b2b57;
+        }
+
+        .qty-box{
+            max-width: 95px;
+        }
+
+        .btn-envy{
+            background: var(--envy-lime);
+            border: none;
+            color: #111;
+            font-weight: 700;
+            border-radius: 999px;
+            padding: 10px 18px;
+        }
+
+        .btn-envy:hover{
+            background: #d0ef00;
+            color: #111;
+        }
+
+        .btn-outline-envy{
+            border: 1px solid #d9d9d9;
+            color: var(--envy-gray);
+            border-radius: 999px;
+            padding: 8px 16px;
+            background: #fff;
+        }
+
+        .btn-outline-envy:hover{
+            background: #f8f8f8;
+        }
+
+        .summary-card{
+            padding: 24px;
+            position: sticky;
+            top: 20px;
+        }
+
+        .summary-title{
+            font-weight: 800;
+            color: #0b2b57;
+        }
+
+        .summary-row{
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            color: var(--envy-gray);
+        }
+
+        .summary-total{
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--envy-dark);
+        }
+
+        .empty-cart{
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-cart i{
+            font-size: 4rem;
+            color: #b8b8b8;
+        }
+
+        .empty-cart h3{
+            margin-top: 15px;
+            font-weight: 800;
+            color: #0b2b57;
+        }
+
+        .empty-cart p{
+            color: #666;
+        }
+
+        .remove-link{
+            color: #dc3545;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .remove-link:hover{
+            text-decoration: underline;
+        }
+
+        .continue-link{
+            text-decoration: none;
+            color: #0b2b57;
+            font-weight: 700;
+        }
+
+        .continue-link:hover{
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-envy">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url('/') }}">
+                <span>ENVY</span>COM
+            </a>
+
+            <div class="ms-auto d-flex align-items-center gap-3">
+                <a href="{{ url('/') }}" class="text-white text-decoration-none">Inicio</a>
+                <a href="{{ url('/productos') }}" class="text-white text-decoration-none">Productos</a>
+                <a href="{{ url('/carrito') }}" class="text-white text-decoration-none">
+                    <i class="bi bi-cart3 fs-5"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+                <h1 class="cart-title mb-1">Carrito de compras</h1>
+                <p class="text-secondary mb-0">Revisa tus productos antes de continuar.</p>
+            </div>
+
+            <a href="{{ url('/productos') }}" class="continue-link">
+                <i class="bi bi-arrow-left"></i> Seguir comprando
+            </a>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+
+                {{-- Si el carrito está vacío, muestra esto --}}
+                @if(empty($carrito) || count($carrito) === 0)
+                    <div class="cart-card empty-cart">
+                        <i class="bi bi-cart-x"></i>
+                        <h3>Tu carrito está vacío</h3>
+                        <p>No has agregado productos todavía.</p>
+                        <a href="{{ url('/productos') }}" class="btn btn-envy mt-2">
+                            Ver productos
+                        </a>
+                    </div>
+                @else
+                    <div class="cart-card">
+
+                        @foreach($carrito as $item)
+                            <div class="cart-item">
+                                <div class="row align-items-center g-3">
+                                    <div class="col-md-2 col-4 text-center">
+                                        <img src="{{ $item['imagen'] ?? 'https://via.placeholder.com/150' }}"
+                                             alt="{{ $item['nombre'] }}"
+                                             class="product-img">
+                                    </div>
+
+                                    <div class="col-md-4 col-8">
+                                        <div class="brand">{{ $item['marca'] ?? 'MARCA' }}</div>
+                                        <div class="product-name">{{ $item['nombre'] }}</div>
+                                        <div class="small text-secondary">
+                                            SKU: {{ $item['sku'] ?? 'N/A' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-2 col-6">
+                                        <label class="form-label small text-secondary mb-1">Cantidad</label>
+                                        <form action="{{ url('/carrito/actualizar') }}" method="POST">
+                                            @csrf
+                                            <input type="hidden" name="id" value="{{ $item['id'] }}">
+                                            <input type="number"
+                                                   name="cantidad"
+                                                   value="{{ $item['cantidad'] }}"
+                                                   min="1"
+                                                   class="form-control qty-box">
+                                        </form>
+                                    </div>
+
+                                    <div class="col-md-2 col-6">
+                                        <label class="form-label small text-secondary mb-1">Precio</label>
+                                        <div class="product-price">
+                                            ${{ number_format($item['precio'], 2) }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-2 col-12 text-md-end">
+                                        <a href="{{ url('/carrito/eliminar/' . $item['id']) }}" class="remove-link">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+
+                    </div>
+                @endif
+            </div>
+
+            <div class="col-lg-4">
+                <div class="summary-card">
+                    <h3 class="summary-title mb-4">Resumen del pedido</h3>
+
+                    @php
+                        $subtotal = 0;
+                        if(!empty($carrito)){
+                            foreach($carrito as $item){
+                                $subtotal += $item['precio'] * $item['cantidad'];
+                            }
+                        }
+                        $envio = !empty($carrito) && $subtotal > 0 ? 0 : 0;
+                        $total = $subtotal + $envio;
+                    @endphp
+
+                    <div class="summary-row">
+                        <span>Subtotal</span>
+                        <span>${{ number_format($subtotal, 2) }}</span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span>Envío</span>
+                        <span>
+                            @if($envio == 0)
+                                Gratis
+                            @else
+                                ${{ number_format($envio, 2) }}
+                            @endif
+                        </span>
+                    </div>
+
+                    <hr>
+
+                    <div class="summary-row summary-total">
+                        <span>Total</span>
+                        <span>${{ number_format($total, 2) }}</span>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <a href="{{ url('/checkout') }}" class="btn btn-envy btn-lg">
+                            Proceder al pago
+                        </a>
+                    </div>
+
+                    <div class="d-grid mt-2">
+                        <a href="{{ url('/productos') }}" class="btn btn-outline-envy">
+                            Seguir comprando
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
