@@ -29,4 +29,14 @@ class ProductController extends Controller
 
         return view('products.resultados', compact('products', 'search'));
     }
+
+    public function show($id)
+    {
+        // Buscamos el producto por ID, si no existe lanza error 404
+        $product = Product::findOrFail($id);
+
+        // dd($product->toArray());
+
+        return view('products.show', compact('product'));
+    }
 }

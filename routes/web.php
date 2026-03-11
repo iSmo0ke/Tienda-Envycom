@@ -68,5 +68,8 @@ Route::post('/carrito/actualizar/{id}', [CartController::class, 'update'])->name
 Route::delete('/carrito/eliminar/{id}', [CartController::class, 'remove'])->name('carrito.remove');
 Route::delete('/carrito/vaciar', [CartController::class, 'clear'])->name('carrito.clear');
 
+// Ruta para ver el detalle de un producto específico
+Route::get('/producto/{id}', [ProductController::class, 'show'])->name('products.show');
+
 
 require __DIR__.'/auth.php';
