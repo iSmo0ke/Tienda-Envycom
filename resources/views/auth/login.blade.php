@@ -1,3 +1,6 @@
+@extends('layouts.app')
+
+@section('content')
 <x-guest-layout>
     <!-- Logo -->
     <div class="flex justify-center mb-6">
@@ -59,3 +62,4 @@
         </div>
     </form>
 </x-guest-layout>
+@endsection

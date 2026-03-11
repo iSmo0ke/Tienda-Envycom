@@ -1,3 +1,5 @@
+@extends('layouts.app')
+
 @php
     $subtotal = 0;
     foreach ($carrito as $item) {
@@ -7,16 +9,7 @@
     $total = $subtotal + $envio;
 @endphp
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carrito de compras | ENVYCOM</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
+@section('content')
     <style>
         :root{
             --envy-lime: #dfff00;
@@ -31,20 +24,6 @@
             background: var(--bg-soft);
             font-family: 'Segoe UI', sans-serif;
             color: var(--envy-dark);
-        }
-
-        .navbar-envy{
-            background: linear-gradient(90deg, #081c3a 0%, #0b2b57 100%);
-        }
-
-        .navbar-brand{
-            font-weight: 800;
-            letter-spacing: .5px;
-            color: #fff !important;
-        }
-
-        .navbar-brand span{
-            color: var(--envy-lime);
         }
 
         .cart-title{
@@ -194,24 +173,6 @@
             text-decoration: underline;
         }
     </style>
-</head>
-<body>
-
-    <nav class="navbar navbar-expand-lg navbar-envy">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url('/') }}">
-                <span>ENVY</span>COM
-            </a>
-
-            <div class="ms-auto d-flex align-items-center gap-3">
-                <a href="{{ url('/') }}" class="text-white text-decoration-none">Inicio</a>
-                <a href="{{ url('/productos') }}" class="text-white text-decoration-none">Productos</a>
-                <a href="{{ route('carrito') }}" class="text-white text-decoration-none">
-                    <i class="bi bi-cart3 fs-5"></i>
-                </a>
-            </div>
-        </div>
-    </nav>
 
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
@@ -233,7 +194,6 @@
 
         <div class="row g-4">
             <div class="col-lg-8">
-
                 @if(empty($carrito) || count($carrito) === 0)
                     <div class="cart-card empty-cart">
                         <i class="bi bi-cart-x"></i>
@@ -245,7 +205,6 @@
                     </div>
                 @else
                     <div class="cart-card">
-
                         @foreach($carrito as $item)
                             <div class="cart-item">
                                 <div class="row align-items-center g-3">
@@ -295,7 +254,6 @@
                                 </div>
                             </div>
                         @endforeach
-
                     </div>
                 @endif
             </div>
@@ -354,6 +312,4 @@
             </div>
         </div>
     </div>
-
-</body>
-</html>
+@endsection
