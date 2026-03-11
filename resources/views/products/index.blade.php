@@ -1,56 +1,231 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tienda de Tecnología - CT</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-gray-50 font-sans antialiased">
+@extends('layouts.app')
 
-    <nav class="bg-white shadow-sm border-b mb-8">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-            <span class="text-2xl font-bold text-blue-600">Mi Tienda Online</span>
-        </div>
-    </nav>
+@section('content')
+<style>
+    :root{
+        --envy-lime: #dfff00;
+        --envy-dark: #121012;
+        --envy-blue: #0b2b57;
+        --envy-gray: #6b7280;
+        --envy-bg: #f5f6f8;
+    }
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 class="text-3xl font-extrabold text-gray-900 mb-8">Catálogo de Productos</h1>
+    body{
+        background: var(--envy-bg);
+    }
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            @foreach ($products as $product)
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-                    <div class="p-4 bg-gray-50 flex items-center justify-center">
-                        <img src="{{ $product->imagen }}" alt="{{ $product->nombre }}" class="h-40 object-contain">
+    .catalog-wrapper{
+        padding: 40px 0 60px;
+    }
+
+    .catalog-title{
+        font-size: 3rem;
+        font-weight: 800;
+        color: #1f2937;
+        margin-bottom: 24px;
+    }
+
+    .products-grid{
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 24px;
+    }
+
+    .product-card{
+        background: #fff;
+        border-radius: 18px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 6px 18px rgba(0,0,0,.05);
+        overflow: hidden;
+        transition: transform .2s ease, box-shadow .2s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-card:hover{
+        transform: translateY(-4px);
+        box-shadow: 0 10px 28px rgba(0,0,0,.09);
+    }
+
+    .product-image-wrap{
+        background: #fff;
+        height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        border-bottom: 1px solid #f1f1f1;
+    }
+
+    .product-image{
+        max-width: 100%;
+        max-height: 180px;
+        object-fit: contain;
+    }
+
+    .product-body{
+        padding: 18px 18px 20px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    .product-brand{
+        font-size: .85rem;
+        font-weight: 700;
+        color: var(--envy-blue);
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        margin-bottom: 10px;
+    }
+
+    .product-name{
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #1f2937;
+        line-height: 1.25;
+        margin-bottom: 10px;
+        min-height: 72px;
+    }
+
+    .product-desc{
+        font-size: .95rem;
+        color: var(--envy-gray);
+        line-height: 1.5;
+        margin-bottom: 16px;
+        min-height: 48px;
+    }
+
+    .product-price{
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 16px;
+    }
+
+    .product-actions{
+        margin-top: auto;
+    }
+
+    .btn-cart{
+        width: 100%;
+        border: none;
+        border-radius: 999px;
+        background: var(--envy-lime);
+        color: #111;
+        font-weight: 800;
+        padding: 12px 18px;
+        transition: .2s ease;
+    }
+
+    .btn-cart:hover{
+        background: #d3f200;
+    }
+
+    .empty-products{
+        background: #fff;
+        border-radius: 18px;
+        border: 1px solid #e5e7eb;
+        padding: 40px;
+        text-align: center;
+        color: var(--envy-gray);
+    }
+
+    .pagination-wrapper{
+        margin-top: 32px;
+    }
+
+    .pagination-wrapper nav{
+        display: flex;
+        justify-content: center;
+    }
+
+    .pagination-wrapper nav > div:first-child {
+        display: none !important;
+    }
+
+    .pagination-wrapper nav svg,
+    nav[role="navigation"] svg{
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+    .pagination-wrapper nav span,
+    .pagination-wrapper nav a,
+    nav[role="navigation"] span,
+    nav[role="navigation"] a{
+        font-size: 14px !important;
+    }
+
+    @media (max-width: 768px){
+        .catalog-title{
+            font-size: 2.2rem;
+        }
+
+        .product-name{
+            font-size: 1.2rem;
+            min-height: auto;
+        }
+
+        .product-image-wrap{
+            height: 190px;
+        }
+    }
+</style>
+
+<div class="container catalog-wrapper">
+    <h1 class="catalog-title">Catálogo de Productos</h1>
+
+    @if($products->count())
+        <div class="products-grid">
+            @foreach($products as $product)
+                <div class="product-card">
+                    <div class="product-image-wrap">
+                        <img 
+                            src="{{ $product->imagen ?: 'https://via.placeholder.com/300x300?text=Producto' }}"
+                            alt="{{ $product->nombre }}"
+                            class="product-image"
+                        >
                     </div>
-                    
-                    <div class="p-4 flex flex-col flex-grow">
-                        <span class="text-xs font-semibold text-blue-500 uppercase tracking-wider">{{ $product->marca }}</span>
-                        <h2 class="mt-1 text-sm font-medium text-gray-800 line-clamp-2 h-10">{{ $product->nombre }}</h2>
-                        
-                        <div class="mt-4 flex items-center justify-between">
-                            <span class="text-xl font-bold text-gray-900">
-                                @if($product->moneda == 'USD')
-                                    {{-- Aquí usamos el tipo de cambio que viene en tu JSON --}}
-                                    ${{ number_format($product->precio * 17.85, 2) }} <small class="text-xs text-gray-500">MXN</small>
-                                @else
-                                    ${{ number_format($product->precio, 2) }} <small class="text-xs text-gray-500">MXN</small>
-                                @endif
-                            </span>
+
+                    <div class="product-body">
+                        <div class="product-brand">
+                            {{ $product->marca ?? 'Sin marca' }}
                         </div>
 
-                        <button class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition">
-                            Añadir al carrito
-                        </button>
+                        <div class="product-name">
+                            {{ $product->nombre }}
+                        </div>
+
+                        <div class="product-desc">
+                            {{ \Illuminate\Support\Str::limit($product->descripcion_corta ?? 'Sin descripción disponible.', 90) }}
+                        </div>
+
+                        <div class="product-price">
+                            ${{ number_format($product->precio, 2) }} MXN
+                        </div>
+
+                        <div class="product-actions">
+                            <form action="{{ route('carrito.add', $product->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn-cart">
+                                    Añadir al carrito
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             @endforeach
         </div>
 
-        <div class="py-12">
+        <div class="pagination-wrapper">
             {{ $products->links() }}
         </div>
-    </main>
-
-</body>
-</html>
+    @else
+        <div class="empty-products">
+            No hay productos disponibles por el momento.
+        </div>
+    @endif
+</div>
+@endsection
