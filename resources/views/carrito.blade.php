@@ -287,7 +287,7 @@
 
                     <div class="d-grid mt-4">
                         <a href="{{ url('/checkout') }}" class="btn btn-envy btn-lg">
-                            Proceder al pago
+                            Confirmar pedido
                         </a>
                     </div>
 

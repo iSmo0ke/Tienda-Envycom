@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
-
+use App\Http\Controllers\CheckoutController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -80,39 +80,45 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     //ruta para el checkout
-    Route::get('/checkout', function () {
-        return view('checkout');
-    })->name('checkout');
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+    Route::post('/checkout/procesar', [CheckoutController::class, 'process'])->name('checkout.process');
+
 
     Route::get('/pedido-confirmado', function () {
-        return view('pedido-confirmado');
+        // Buscamos el último pedido registrado de este usuario
+        // $order = \App\Models\Order::where('user_id', auth()->id())->latest()->first();
+        // $order = \App\Models\Order::where('user_id', auth()->user()->id)->latest()->first();
+        $order = \App\Models\Order::where('user_id', \Illuminate\Support\Facades\Auth::id())->latest()->first();
+
+        // Si por alguna razón alguien entra a esta URL directo sin haber comprado, lo mandamos al inicio
+        if (!$order) {
+            return redirect()->route('products.index');
+        }
+
+        // Le pasamos el pedido a la vista
+        return view('pedido-confirmado', compact('order'));
     })->name('pedido.confirmado');
 
-    Route::get('/mi-cuenta/pedidos', function () {
-        $pedidos = [
-            [
-                'folio' => 'ENV-1001',
-                'fecha' => '2026-03-11',
-                'total' => 2499.00,
-                'estatus' => 'En proceso',
-                'productos' => [
-                    ['nombre' => 'Laptop HP 240 G8', 'cantidad' => 1, 'precio' => 2499.00],
-                ],
-            ],
-            [
-                'folio' => 'ENV-1000',
-                'fecha' => '2026-03-05',
-                'total' => 899.00,
-                'estatus' => 'Entregado',
-                'productos' => [
-                    ['nombre' => 'Mouse Logitech M170', 'cantidad' => 1, 'precio' => 299.00],
-                    ['nombre' => 'Teclado inalámbrico', 'cantidad' => 1, 'precio' => 600.00],
-                ],
-            ],
-        ];
+Route::get('/mi-cuenta/pedidos', function () {
+        // Consultamos directamente el modelo Order usando el ID del usuario logueado
+        $pedidos = \App\Models\Order::with('items.product')
+                    ->where('user_id', \Illuminate\Support\Facades\Auth::id())
+                    ->orderBy('created_at', 'desc')
+                    ->get();
 
         return view('profile.pedidos', compact('pedidos'));
-    })->name('profile   .pedidos');
+    })->name('profile.pedidos');
+
+    // Ruta para ver un pedido específico
+    Route::get('/mi-cuenta/pedidos/{id}', function ($id) {
+        // Buscamos el pedido asegurándonos de que le pertenezca al usuario logueado (¡Seguridad primero!)
+        $pedido = \App\Models\Order::with('items.product')
+                    ->where('id', $id)
+                    ->where('user_id', \Illuminate\Support\Facades\Auth::id())
+                    ->firstOrFail(); // Si alguien intenta poner un ID que no es suyo, dará error 404
+
+        return view('profile.pedido-detalle', compact('pedido'));
+    })->name('profile.pedido.detalle');
 });
 
 

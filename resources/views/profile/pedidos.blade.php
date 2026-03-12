@@ -86,34 +86,45 @@
         <div class="order-card">
             <div class="order-header">
                 <div>
-                    <div class="order-folio">Pedido {{ $pedido['folio'] }}</div>
-                    <div class="text-muted small">Fecha: {{ $pedido['fecha'] }}</div>
+                    <div class="order-folio">Pedido {{ $pedido->order_number }}</div>
+                    <div class="text-muted small">Fecha: {{ $pedido->created_at->format('d/m/Y') }}</div>
                 </div>
 
                 <div>
-                    <span class="status-badge {{ $pedido['estatus'] === 'Entregado' ? 'status-entregado' : 'status-proceso' }}">
-                        {{ $pedido['estatus'] }}
+                    @php
+                        $claseEstatus = 'status-proceso'; // Por defecto amarillo
+                        if($pedido->status === 'entregado') {
+                            $claseEstatus = 'status-entregado'; // Verde si ya se entregó
+                        } elseif($pedido->status === 'cancelado') {
+                            $claseEstatus = 'text-danger'; // Rojo si se canceló
+                        }
+                    @endphp
+                    
+                    <span class="status-badge {{ $claseEstatus }}">
+                        {{ ucfirst(str_replace('_', ' ', $pedido->status)) }}
                     </span>
                 </div>
             </div>
 
-            @foreach($pedido['productos'] as $producto)
+            @foreach($pedido->items as $item)
                 <div class="product-row">
                     <div>
-                        <strong>{{ $producto['nombre'] }}</strong>
-                        <div class="text-muted small">Cantidad: {{ $producto['cantidad'] }}</div>
+                        <strong>{{ $item->product->nombre ?? 'Producto no disponible' }}</strong>
+                        <div class="text-muted small">Cantidad: {{ $item->quantity }}</div>
                     </div>
-                    <div>${{ number_format($producto['precio'], 2) }}</div>
+                    <div>${{ number_format($item->price * $item->quantity, 2) }}</div>
                 </div>
             @endforeach
 
-            <div class="order-total">
-                Total: ${{ number_format($pedido['total'], 2) }}
+            <div class="order-total d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                <a href="{{ route('profile.pedido.detalle', $pedido->id) }}" class="btn btn-sm btn-outline-dark rounded-pill px-3">Ver detalle completo</a>
+                <span>Total: ${{ number_format($pedido->total, 2) }}</span>
             </div>
         </div>
     @empty
-        <div class="alert alert-light border rounded-4">
-            Aún no tienes pedidos registrados.
+        <div class="alert alert-light border rounded-4 text-center py-5">
+            <h4 class="text-muted mb-0">Aún no tienes pedidos registrados.</h4>
+            <a href="{{ route('products.index') }}" class="btn btn-dark mt-3 rounded-pill px-4">Ir a la tienda</a>
         </div>
     @endforelse
 </div>
