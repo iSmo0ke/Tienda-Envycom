@@ -22,15 +22,9 @@ Route::get('/dashboard', function () {
 Route::get('/', function () {
     // Traemos los últimos 18 productos para tener 3 "páginas" en el carrusel (6 por página)
     $productosDestacados = Product::latest()->take(18)->get();
-    
-    return view('welcome', compact('productosDestacados')); 
-    // Nota: cambia 'welcome' por el nombre real de tu vista si se llama diferente
-});
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    return view('welcome', compact('productosDestacados'));
+    // Nota: cambia 'welcome' por el nombre real de tu vista si se llama diferente
 });
 
 // Ruta para la búsqueda de productos
@@ -42,8 +36,8 @@ Route::get('/buscar', function (Request $request) {
     if ($search) {
         // Busca productos donde el nombre contenga la palabra escrita
         $products = Product::where('nombre', 'LIKE', "%{$search}%")
-                            ->orWhere('marca', 'LIKE', "%{$search}%") // Opcional: buscar también por marca
-                            ->get();
+            ->orWhere('marca', 'LIKE', "%{$search}%") // Opcional: buscar también por marca
+            ->get();
     } else {
         // Si entran a /buscar sin escribir nada, podemos mostrar los últimos 12 productos
         $products = Product::latest()->take(12)->get();
@@ -55,7 +49,7 @@ Route::get('/buscar', function (Request $request) {
 
 // Ruta para el carrito (para evitar el siguiente error)
 Route::get('/carrito', function () {
-    return view('carrito'); 
+    return view('carrito');
 })->name('carrito');
 
 Route::get('/productos', [ProductController::class, 'index'])->name('products.index');
@@ -71,42 +65,6 @@ Route::delete('/carrito/vaciar', [CartController::class, 'clear'])->name('carrit
 // Ruta para ver el detalle de un producto específico
 Route::get('/producto/{id}', [ProductController::class, 'show'])->name('products.show');
 
-//ruta para el checkout
-
-Route::get('/checkout', function () {
-    return view('checkout');
-})->name('checkout');
-
-Route::get('/pedido-confirmado', function () {
-    return view('pedido-confirmado');
-})->name('pedido.confirmado');
-
-Route::get('/mi-cuenta/pedidos', function () {
-    $pedidos = [
-        [
-            'folio' => 'ENV-1001',
-            'fecha' => '2026-03-11',
-            'total' => 2499.00,
-            'estatus' => 'En proceso',
-            'productos' => [
-                ['nombre' => 'Laptop HP 240 G8', 'cantidad' => 1, 'precio' => 2499.00],
-            ],
-        ],
-        [
-            'folio' => 'ENV-1000',
-            'fecha' => '2026-03-05',
-            'total' => 899.00,
-            'estatus' => 'Entregado',
-            'productos' => [
-                ['nombre' => 'Mouse Logitech M170', 'cantidad' => 1, 'precio' => 299.00],
-                ['nombre' => 'Teclado inalámbrico', 'cantidad' => 1, 'precio' => 600.00],
-            ],
-        ],
-    ];
-
-    return view('profile.pedidos', compact('pedidos'));
-})->name('profile   .pedidos');
-
 Route::get('/terminos-y-condiciones', function () {
     return view('legal.terminos');
 })->name('legal.terminos');
@@ -115,5 +73,47 @@ Route::get('/aviso-de-privacidad', function () {
     return view('legal.privacidad');
 })->name('legal.privacidad');
 
+//Rutas protegidas
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-require __DIR__.'/auth.php';
+    //ruta para el checkout
+    Route::get('/checkout', function () {
+        return view('checkout');
+    })->name('checkout');
+
+    Route::get('/pedido-confirmado', function () {
+        return view('pedido-confirmado');
+    })->name('pedido.confirmado');
+
+    Route::get('/mi-cuenta/pedidos', function () {
+        $pedidos = [
+            [
+                'folio' => 'ENV-1001',
+                'fecha' => '2026-03-11',
+                'total' => 2499.00,
+                'estatus' => 'En proceso',
+                'productos' => [
+                    ['nombre' => 'Laptop HP 240 G8', 'cantidad' => 1, 'precio' => 2499.00],
+                ],
+            ],
+            [
+                'folio' => 'ENV-1000',
+                'fecha' => '2026-03-05',
+                'total' => 899.00,
+                'estatus' => 'Entregado',
+                'productos' => [
+                    ['nombre' => 'Mouse Logitech M170', 'cantidad' => 1, 'precio' => 299.00],
+                    ['nombre' => 'Teclado inalámbrico', 'cantidad' => 1, 'precio' => 600.00],
+                ],
+            ],
+        ];
+
+        return view('profile.pedidos', compact('pedidos'));
+    })->name('profile   .pedidos');
+});
+
+
+require __DIR__ . '/auth.php';

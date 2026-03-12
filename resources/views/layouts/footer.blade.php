@@ -27,10 +27,10 @@
                     <li class="mb-2"><i class="bi bi-telephone-fill me-2 text-white"></i> 238 289 9275</li>
                     <li class="mb-2"><i class="bi bi-envelope-fill me-2 text-white"></i> contacto@envycom.com</li>
                     <li class="mb-2 mt-4">
-                        <a href="#" class="text-decoration-none text-white-50 hover-white">Política de Privacidad</a>
+                        <a href="{{ url('/aviso-de-privacidad') }}" class="text-decoration-none text-white-50 hover-white">Política de Privacidad</a>
                     </li>
                     <li class="mb-2">
-                        <a href="#" class="text-decoration-none text-white-50 hover-white">Términos y Condiciones</a>
+                        <a href="{{ url('/terminos-y-condiciones') }}" class="text-decoration-none text-white-50 hover-white">Términos y Condiciones</a>
                     </li>
                 </ul>
             </div>
