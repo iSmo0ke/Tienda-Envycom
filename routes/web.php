@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
-
+use App\Http\Controllers\CheckoutController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -22,15 +22,9 @@ Route::get('/dashboard', function () {
 Route::get('/', function () {
     // Traemos los últimos 18 productos para tener 3 "páginas" en el carrusel (6 por página)
     $productosDestacados = Product::latest()->take(18)->get();
-    
-    return view('welcome', compact('productosDestacados')); 
-    // Nota: cambia 'welcome' por el nombre real de tu vista si se llama diferente
-});
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    return view('welcome', compact('productosDestacados'));
+    // Nota: cambia 'welcome' por el nombre real de tu vista si se llama diferente
 });
 
 // Ruta para la búsqueda de productos
@@ -42,8 +36,8 @@ Route::get('/buscar', function (Request $request) {
     if ($search) {
         // Busca productos donde el nombre contenga la palabra escrita
         $products = Product::where('nombre', 'LIKE', "%{$search}%")
-                            ->orWhere('marca', 'LIKE', "%{$search}%") // Opcional: buscar también por marca
-                            ->get();
+            ->orWhere('marca', 'LIKE', "%{$search}%") // Opcional: buscar también por marca
+            ->get();
     } else {
         // Si entran a /buscar sin escribir nada, podemos mostrar los últimos 12 productos
         $products = Product::latest()->take(12)->get();
@@ -55,7 +49,7 @@ Route::get('/buscar', function (Request $request) {
 
 // Ruta para el carrito (para evitar el siguiente error)
 Route::get('/carrito', function () {
-    return view('carrito'); 
+    return view('carrito');
 })->name('carrito');
 
 Route::get('/productos', [ProductController::class, 'index'])->name('products.index');
@@ -71,5 +65,61 @@ Route::delete('/carrito/vaciar', [CartController::class, 'clear'])->name('carrit
 // Ruta para ver el detalle de un producto específico
 Route::get('/producto/{id}', [ProductController::class, 'show'])->name('products.show');
 
+Route::get('/terminos-y-condiciones', function () {
+    return view('legal.terminos');
+})->name('legal.terminos');
 
-require __DIR__.'/auth.php';
+Route::get('/aviso-de-privacidad', function () {
+    return view('legal.privacidad');
+})->name('legal.privacidad');
+
+//Rutas protegidas
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    //ruta para el checkout
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+    Route::post('/checkout/procesar', [CheckoutController::class, 'process'])->name('checkout.process');
+
+
+    Route::get('/pedido-confirmado', function () {
+        // Buscamos el último pedido registrado de este usuario
+        // $order = \App\Models\Order::where('user_id', auth()->id())->latest()->first();
+        // $order = \App\Models\Order::where('user_id', auth()->user()->id)->latest()->first();
+        $order = \App\Models\Order::where('user_id', \Illuminate\Support\Facades\Auth::id())->latest()->first();
+
+        // Si por alguna razón alguien entra a esta URL directo sin haber comprado, lo mandamos al inicio
+        if (!$order) {
+            return redirect()->route('products.index');
+        }
+
+        // Le pasamos el pedido a la vista
+        return view('pedido-confirmado', compact('order'));
+    })->name('pedido.confirmado');
+
+Route::get('/mi-cuenta/pedidos', function () {
+        // Consultamos directamente el modelo Order usando el ID del usuario logueado
+        $pedidos = \App\Models\Order::with('items.product')
+                    ->where('user_id', \Illuminate\Support\Facades\Auth::id())
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+        return view('profile.pedidos', compact('pedidos'));
+    })->name('profile.pedidos');
+
+    // Ruta para ver un pedido específico
+    Route::get('/mi-cuenta/pedidos/{id}', function ($id) {
+        // Buscamos el pedido asegurándonos de que le pertenezca al usuario logueado (¡Seguridad primero!)
+        $pedido = \App\Models\Order::with('items.product')
+                    ->where('id', $id)
+                    ->where('user_id', \Illuminate\Support\Facades\Auth::id())
+                    ->firstOrFail(); // Si alguien intenta poner un ID que no es suyo, dará error 404
+
+        return view('profile.pedido-detalle', compact('pedido'));
+    })->name('profile.pedido.detalle');
+});
+
+
+require __DIR__ . '/auth.php';

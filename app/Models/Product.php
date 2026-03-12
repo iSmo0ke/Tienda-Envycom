@@ -19,4 +19,8 @@ class Product extends Model
         'promociones' => 'array',
         'activo' => 'boolean',
     ];
+
+    public function orderItems() {
+    return $this->hasMany(OrderItem::class);
+}
 }
