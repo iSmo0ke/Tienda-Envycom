@@ -71,5 +71,49 @@ Route::delete('/carrito/vaciar', [CartController::class, 'clear'])->name('carrit
 // Ruta para ver el detalle de un producto específico
 Route::get('/producto/{id}', [ProductController::class, 'show'])->name('products.show');
 
+//ruta para el checkout
+
+Route::get('/checkout', function () {
+    return view('checkout');
+})->name('checkout');
+
+Route::get('/pedido-confirmado', function () {
+    return view('pedido-confirmado');
+})->name('pedido.confirmado');
+
+Route::get('/mi-cuenta/pedidos', function () {
+    $pedidos = [
+        [
+            'folio' => 'ENV-1001',
+            'fecha' => '2026-03-11',
+            'total' => 2499.00,
+            'estatus' => 'En proceso',
+            'productos' => [
+                ['nombre' => 'Laptop HP 240 G8', 'cantidad' => 1, 'precio' => 2499.00],
+            ],
+        ],
+        [
+            'folio' => 'ENV-1000',
+            'fecha' => '2026-03-05',
+            'total' => 899.00,
+            'estatus' => 'Entregado',
+            'productos' => [
+                ['nombre' => 'Mouse Logitech M170', 'cantidad' => 1, 'precio' => 299.00],
+                ['nombre' => 'Teclado inalámbrico', 'cantidad' => 1, 'precio' => 600.00],
+            ],
+        ],
+    ];
+
+    return view('profile.pedidos', compact('pedidos'));
+})->name('profile   .pedidos');
+
+Route::get('/terminos-y-condiciones', function () {
+    return view('legal.terminos');
+})->name('legal.terminos');
+
+Route::get('/aviso-de-privacidad', function () {
+    return view('legal.privacidad');
+})->name('legal.privacidad');
+
 
 require __DIR__.'/auth.php';
