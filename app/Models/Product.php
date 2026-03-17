@@ -9,7 +9,7 @@ class Product extends Model
     protected $fillable = [
         'idProducto', 'numParte', 'nombre', 'modelo', 'marca', 
         'subcategoria', 'categoria', 'descripcion_corta', 'activo', 
-        'existencia', 'precio', 'especificaciones', 'promociones', 'imagen'
+        'existencia', 'precio', 'especificaciones', 'promociones', 'imagen', 'source'
     ];
 
     // Esto convierte los JSON de la base de datos en arreglos de PHP automáticamente

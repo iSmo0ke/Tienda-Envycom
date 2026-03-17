@@ -205,8 +205,10 @@
                     <div class="product-card">
                         <div class="product-image-wrap">
                             <a href="{{ route('products.show', $product->id) }}">
-                                <img src="{{ $product->imagen }}" class="img-fluid mb-3"
-                                    style="height: 150px; object-fit: contain;">
+                                <x-product-image 
+                                    :image="$product->imagen" 
+                                    :alt="$product->nombre" cssClass="w-full h-64 object-contain p-2" 
+                                />
 
                             </a>
                         </div>
