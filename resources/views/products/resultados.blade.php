@@ -9,6 +9,11 @@
 
     @forelse($products as $product)
         <div class="mb-6 border p-4 rounded">
+            <x-product-image 
+                :image="$product->imagen" 
+                :alt="$product->nombre" 
+                cssClass="w-full h-48 object-cover" 
+            />
             <h6>{{ $product->nombre }}</h6>
             <p>{{ $product->descripcion }}</p>
             <h5>${{ number_format($product->precio, 2) }}</h5>

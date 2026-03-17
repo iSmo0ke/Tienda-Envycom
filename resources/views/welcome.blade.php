@@ -22,10 +22,10 @@
         <div class="product-card text-center h-100 d-flex flex-column shadow-sm rounded-4 p-3 bg-white border-0">
             
             <a href="{{ route('products.show', $producto->id) }}" style="text-decoration: none; color: inherit;" class="flex-grow-1">
-                <div class="product-image-wrap mb-3">
-                    <img src="{{ $producto->imagen }}" class="img-fluid"
-                         style="height: 150px; object-fit: contain;">
-                </div>
+                <x-product-image 
+                    :image="$producto->imagen" 
+                    :alt="$producto->nombre"cssClass="w-full h-48 object-cover rounded-t-lg" 
+                />
 
                 <div class="brand text-uppercase text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">
                     {{ $producto->marca ?? 'MARCA' }}
