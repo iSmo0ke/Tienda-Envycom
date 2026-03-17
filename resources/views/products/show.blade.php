@@ -112,9 +112,11 @@
 
         <div class="row g-4">
             <div class="col-lg-6">
-                <div class="detail-card text-center h-100 d-flex align-items-center justify-content-center">
-                    <img src="{{ $product->imagen }}" class="product-main-img">
-                </div>
+                <x-product-image 
+                    :image="$product->imagen" 
+                    :alt="$product->nombre" 
+                    cssClass="w-full h-96 object-contain rounded-lg shadow-md" 
+                />
             </div>
 
             <div class="col-lg-6">

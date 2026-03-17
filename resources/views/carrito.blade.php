@@ -208,11 +208,12 @@
                         @foreach($carrito as $item)
                             <div class="cart-item">
                                 <div class="row align-items-center g-3">
-                                    <div class="col-md-2 col-4 text-center">
-                                        <img src="{{ $item['imagen'] ?? 'https://via.placeholder.com/150' }}"
-                                             alt="{{ $item['nombre'] }}"
-                                             class="product-img">
-                                    </div>
+                                    <x-product-image 
+                                        :image="$item->product->imagen" 
+                                        :alt="$item->product->nombre" 
+                                        cssClass="h-16 w-16 object-cover rounded" 
+                                    />
+
 
                                     <div class="col-md-4 col-8">
                                         <div class="brand">{{ $item['marca'] ?? 'MARCA' }}</div>

@@ -119,6 +119,30 @@ Route::get('/mi-cuenta/pedidos', function () {
 
         return view('profile.pedido-detalle', compact('pedido'));
     })->name('profile.pedido.detalle');
+
+
+
+
+    // Rutas exclusivas de Administrador
+    Route::middleware(['auth', \App\Http\Middleware\AdminMiddleware::class])
+        ->prefix('admin')
+        ->name('admin.')
+        ->group(function () {
+
+        // NUEVO: Ahora /admin carga la vista del dashboard de administrador
+        Route::get('/', function () {
+            return view('admin.dashboard');
+        })->name('dashboard');
+
+        // Rutas para gestionar productos
+        Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
+
+Route::get('/orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [\App\Http\Controllers\Admin\OrderController::class, 'show'])->name('orders.show');
+    Route::put('/orders/{order}/status', [\App\Http\Controllers\Admin\OrderController::class, 'update'])->name('orders.update');
+
+    Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+    });
 });
 
 
