@@ -208,11 +208,11 @@
                         @foreach($carrito as $item)
                             <div class="cart-item">
                                 <div class="row align-items-center g-3">
-                                    <x-product-image 
-                                        :image="$item->product->imagen" 
-                                        :alt="$item->product->nombre" 
-                                        cssClass="h-16 w-16 object-cover rounded" 
-                                    />
+                                <x-product-image 
+                                    :image="$item['imagen']" 
+                                    :alt="$item['nombre']" 
+                                    cssClass="img-fluid w-20 h-20 object-contain" 
+                                />
 
 
                                     <div class="col-md-4 col-8">
