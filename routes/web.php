@@ -130,9 +130,7 @@ Route::get('/mi-cuenta/pedidos', function () {
         ->group(function () {
 
         // NUEVO: Ahora /admin carga la vista del dashboard de administrador
-        Route::get('/', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
         // Rutas para gestionar productos
         Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);

@@ -51,11 +51,11 @@
     <h1 class="h3 fw-bold mb-4" style="color: var(--envy-blue);">Resumen General</h1>
 
     <div class="row g-4 mb-5">
-        <div class="col-md-4">
+<div class="col-md-4">
             <div class="stat-card d-flex justify-content-between align-items-center">
                 <div>
                     <div class="stat-title">Ventas del Mes</div>
-                    <div class="stat-value">$45,230.00</div>
+                    <div class="stat-value">${{ number_format($ventasMes, 2) }}</div>
                 </div>
                 <div class="stat-icon icon-green"><i class="bi bi-currency-dollar"></i></div>
             </div>
@@ -65,7 +65,7 @@
             <div class="stat-card d-flex justify-content-between align-items-center">
                 <div>
                     <div class="stat-title">Pedidos Pendientes</div>
-                    <div class="stat-value">12</div>
+                    <div class="stat-value">{{ $pedidosPendientes }}</div>
                 </div>
                 <div class="stat-icon icon-orange"><i class="bi bi-box-seam"></i></div>
             </div>
@@ -75,7 +75,7 @@
             <div class="stat-card d-flex justify-content-between align-items-center">
                 <div>
                     <div class="stat-title">Productos Propios</div>
-                    <div class="stat-value">34</div>
+                    <div class="stat-value">{{ $productosLocales }}</div>
                 </div>
                 <div class="stat-icon icon-blue"><i class="bi bi-laptop"></i></div>
             </div>
@@ -101,16 +101,37 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td class="fw-bold text-secondary">ENV-2026-0001</td>
-                        <td>Jesús Altamirano</td>
-                        <td>13 Mar, 2026</td>
-                        <td class="fw-bold">$2,649.00</td>
-                        <td><span class="badge bg-warning text-dark rounded-pill px-3">Pendiente</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-dark"><i class="bi bi-eye"></i></button>
-                        </td>
-                    </tr>
+                    @forelse($ultimosPedidos as $pedido)
+                        <tr>
+                            <td class="fw-bold text-secondary">{{ $pedido->order_number }}</td>
+                            <td>{{ $pedido->user->name ?? 'Usuario Eliminado' }}</td>
+                            <td>{{ $pedido->created_at->format('d M, Y') }}</td>
+                            <td class="fw-bold">${{ number_format($pedido->total, 2) }}</td>
+                            <td>
+                                @php
+                                    $badge = match($pedido->status) {
+                                        'entregado' => 'bg-success',
+                                        'cancelado' => 'bg-danger',
+                                        'enviado' => 'bg-info text-dark',
+                                        'en_proceso' => 'bg-primary',
+                                        default => 'bg-warning text-dark',
+                                    };
+                                @endphp
+                                <span class="badge {{ $badge }} rounded-pill px-3">
+                                    {{ ucfirst(str_replace('_', ' ', $pedido->status)) }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ route('admin.orders.show', $pedido->id) }}" class="btn btn-sm btn-outline-dark">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">Aún no hay pedidos recientes.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
