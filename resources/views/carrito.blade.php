@@ -2,8 +2,9 @@
 
 @php
     $subtotal = 0;
-    foreach ($carrito as $item) {
-        $subtotal += $item['precio'] * $item['cantidad'];
+    foreach ($cart as $item) {
+        // CAMBIO: $carrito a $cart
+        $subtotal += $item['price'] * $item['quantity']; // CAMBIO: precio/cantidad a price/quantity
     }
     $envio = 0;
     $total = $subtotal + $envio;
@@ -11,7 +12,7 @@
 
 @section('content')
     <style>
-        :root{
+        :root {
             --envy-lime: #dfff00;
             --envy-dark: #121012;
             --envy-gray: #4a4a4a;
@@ -20,35 +21,35 @@
             --bg-soft: #f5f6f8;
         }
 
-        body{
+        body {
             background: var(--bg-soft);
             font-family: 'Segoe UI', sans-serif;
             color: var(--envy-dark);
         }
 
-        .cart-title{
+        .cart-title {
             font-weight: 800;
             color: #0b2b57;
         }
 
         .cart-card,
-        .summary-card{
+        .summary-card {
             background: #fff;
             border-radius: 18px;
-            box-shadow: 0 4px 18px rgba(0,0,0,.06);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, .06);
             border: 1px solid #ececec;
         }
 
-        .cart-item{
+        .cart-item {
             padding: 22px 18px;
             border-bottom: 1px solid #ececec;
         }
 
-        .cart-item:last-child{
+        .cart-item:last-child {
             border-bottom: none;
         }
 
-        .product-img{
+        .product-img {
             width: 110px;
             height: 110px;
             object-fit: contain;
@@ -58,29 +59,29 @@
             padding: 8px;
         }
 
-        .brand{
+        .brand {
             font-weight: 800;
             color: #102a5d;
             font-size: 1rem;
             margin-bottom: 4px;
         }
 
-        .product-name{
+        .product-name {
             color: var(--envy-gray);
             margin-bottom: 8px;
         }
 
-        .product-price{
+        .product-price {
             font-size: 1.5rem;
             font-weight: 800;
             color: #0b2b57;
         }
 
-        .qty-box{
+        .qty-box {
             max-width: 95px;
         }
 
-        .btn-envy{
+        .btn-envy {
             background: var(--envy-lime);
             border: none;
             color: #111;
@@ -89,12 +90,12 @@
             padding: 10px 18px;
         }
 
-        .btn-envy:hover{
+        .btn-envy:hover {
             background: #d0ef00;
             color: #111;
         }
 
-        .btn-outline-envy{
+        .btn-outline-envy {
             border: 1px solid #d9d9d9;
             color: var(--envy-gray);
             border-radius: 999px;
@@ -102,55 +103,55 @@
             background: #fff;
         }
 
-        .btn-outline-envy:hover{
+        .btn-outline-envy:hover {
             background: #f8f8f8;
         }
 
-        .summary-card{
+        .summary-card {
             padding: 24px;
             position: sticky;
             top: 20px;
         }
 
-        .summary-title{
+        .summary-title {
             font-weight: 800;
             color: #0b2b57;
         }
 
-        .summary-row{
+        .summary-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 12px;
             color: var(--envy-gray);
         }
 
-        .summary-total{
+        .summary-total {
             font-size: 1.35rem;
             font-weight: 800;
             color: var(--envy-dark);
         }
 
-        .empty-cart{
+        .empty-cart {
             text-align: center;
             padding: 60px 20px;
         }
 
-        .empty-cart i{
+        .empty-cart i {
             font-size: 4rem;
             color: #b8b8b8;
         }
 
-        .empty-cart h3{
+        .empty-cart h3 {
             margin-top: 15px;
             font-weight: 800;
             color: #0b2b57;
         }
 
-        .empty-cart p{
+        .empty-cart p {
             color: #666;
         }
 
-        .remove-link{
+        .remove-link {
             color: #dc3545;
             text-decoration: none;
             font-weight: 600;
@@ -159,17 +160,17 @@
             padding: 0;
         }
 
-        .remove-link:hover{
+        .remove-link:hover {
             text-decoration: underline;
         }
 
-        .continue-link{
+        .continue-link {
             text-decoration: none;
             color: #0b2b57;
             font-weight: 700;
         }
 
-        .continue-link:hover{
+        .continue-link:hover {
             text-decoration: underline;
         }
     </style>
@@ -186,7 +187,7 @@
             </a>
         </div>
 
-        @if(session('success'))
+        @if (session('success'))
             <div class="alert alert-success rounded-4 shadow-sm">
                 {{ session('success') }}
             </div>
@@ -194,7 +195,7 @@
 
         <div class="row g-4">
             <div class="col-lg-8">
-                @if(empty($carrito) || count($carrito) === 0)
+                @if (empty($cart) || count($cart) === 0)
                     <div class="cart-card empty-cart">
                         <i class="bi bi-cart-x"></i>
                         <h3>Tu carrito está vacío</h3>
@@ -205,19 +206,15 @@
                     </div>
                 @else
                     <div class="cart-card">
-                        @foreach($carrito as $item)
+                        @foreach ($cart as $item)
                             <div class="cart-item">
                                 <div class="row align-items-center g-3">
-                                <x-product-image 
-                                    :image="$item['imagen']" 
-                                    :alt="$item['nombre']" 
-                                    cssClass="img-fluid w-20 h-20 object-contain" 
-                                />
-
+                                    <x-product-image :image="$item['image']" {{-- CAMBIADO --}} :alt="$item['name']"
+                                        {{-- CAMBIADO --}} cssClass="h-16 w-16 object-cover rounded" />
 
                                     <div class="col-md-4 col-8">
-                                        <div class="brand">{{ $item['marca'] ?? 'MARCA' }}</div>
-                                        <div class="product-name">{{ $item['nombre'] }}</div>
+                                        <div class="brand">{{ $item['brand'] ?? 'MARCA' }}</div> {{-- CAMBIADO --}}
+                                        <div class="product-name">{{ $item['name'] }}</div> {{-- CAMBIADO --}}
                                         <div class="small text-secondary">
                                             SKU: {{ $item['sku'] ?? 'N/A' }}
                                         </div>
@@ -227,19 +224,16 @@
                                         <label class="form-label small text-secondary mb-1">Cantidad</label>
                                         <form action="{{ route('carrito.update', $item['id']) }}" method="POST">
                                             @csrf
-                                            <input type="number"
-                                                   name="cantidad"
-                                                   value="{{ $item['cantidad'] }}"
-                                                   min="1"
-                                                   class="form-control qty-box"
-                                                   onchange="this.form.submit()">
+                                            <input type="number" name="cantidad" {{-- Se queda 'cantidad' porque es lo que espera el Request en el Controller --}}
+                                                value="{{ $item['quantity'] }}" {{-- CAMBIADO --}} min="1"
+                                                class="form-control qty-box" onchange="this.form.submit()">
                                         </form>
                                     </div>
 
                                     <div class="col-md-2 col-6">
                                         <label class="form-label small text-secondary mb-1">Precio</label>
                                         <div class="product-price">
-                                            ${{ number_format($item['precio'], 2) }}
+                                            ${{ number_format($item['price'], 2) }} {{-- CAMBIADO --}}
                                         </div>
                                     </div>
 
@@ -271,7 +265,7 @@
                     <div class="summary-row">
                         <span>Envío</span>
                         <span>
-                            @if($envio == 0)
+                            @if ($envio == 0)
                                 Gratis
                             @else
                                 ${{ number_format($envio, 2) }}
@@ -298,7 +292,7 @@
                         </a>
                     </div>
 
-                    @if(!empty($carrito) && count($carrito) > 0)
+                    @if (!empty($cart) && count($cart) > 0)
                         <div class="d-grid mt-2">
                             <form action="{{ route('carrito.clear') }}" method="POST">
                                 @csrf

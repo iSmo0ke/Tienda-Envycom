@@ -229,10 +229,10 @@
                         <h3 class="summary-title">Resumen del pedido</h3>
 
                         <div class="mb-3">
-                            @foreach ($carrito as $item)
+                            @foreach ($cart as $item) {{-- CAMBIO --}}
                                 <div class="d-flex justify-content-between small text-muted mb-1">
-                                    <span>{{ $item['cantidad'] }}x {{ $item['nombre'] }}</span>
-                                    <span>${{ number_format($item['precio'] * $item['cantidad'], 2) }}</span>
+                                    <span>{{ $item['quantity'] }}x {{ $item['name'] }}</span> {{-- CAMBIO --}}
+                                    <span>${{ number_format($item['price'] * $item['quantity'], 2) }}</span> {{-- CAMBIO --}}
                                 </div>
                             @endforeach
                         </div>
