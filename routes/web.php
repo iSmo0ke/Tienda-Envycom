@@ -99,7 +99,7 @@ Route::middleware('auth')->group(function () {
         return view('pedido-confirmado', compact('order'));
     })->name('pedido.confirmado');
 
-Route::get('/mi-cuenta/pedidos', function () {
+    Route::get('/mi-cuenta/pedidos', function () {
         // Consultamos directamente el modelo Order usando el ID del usuario logueado
         $pedidos = \App\Models\Order::with('items.product')
                     ->where('user_id', \Illuminate\Support\Facades\Auth::id())
@@ -120,6 +120,12 @@ Route::get('/mi-cuenta/pedidos', function () {
         return view('profile.pedido-detalle', compact('pedido'));
     })->name('profile.pedido.detalle');
 
+    // Flujo de Checkout
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout/address', [CheckoutController::class, 'processAddress'])->name('checkout.processAddress'); // Guarda dirección
+    Route::get('/checkout/payment', [CheckoutController::class, 'payment'])->name('checkout.payment'); // Muestra Openpay
+    Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process'); // Cobra
+
 
 
 
@@ -135,7 +141,7 @@ Route::get('/mi-cuenta/pedidos', function () {
         // Rutas para gestionar productos
         Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
 
-Route::get('/orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [\App\Http\Controllers\Admin\OrderController::class, 'show'])->name('orders.show');
     Route::put('/orders/{order}/status', [\App\Http\Controllers\Admin\OrderController::class, 'update'])->name('orders.update');
 
