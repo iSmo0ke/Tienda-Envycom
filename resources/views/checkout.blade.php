@@ -131,7 +131,7 @@
             </div>
         @endif
 
-        <form action="{{ route('checkout.process') }}" method="POST">
+        <form action="{{ route('checkout.processAddress') }}" method="POST">
             @csrf <div class="row g-4">
                 <div class="col-lg-8">
 <div class="checkout-card mb-4">

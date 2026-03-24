@@ -1,20 +1,33 @@
-Nomenclatura del Proyecto (Código en Inglés, Interfaz en Español)
-Para mantener el código limpio, escalable y aprovechar la sintaxis nativa de Laravel (como la pluralización automática de modelos), todo el equipo debe seguir este estándar de nombramiento:
+Envycom Ecommerce
+1. Clonar repositorio
+2. Instalar dependencias de PHP:
+    - composer install
+3. Instalar dependecias frontend:
+    - npm install
 
-1. Archivos y Carpetas (Inglés y minúsculas)
+4. Configuracion de entorno
+    - Copiar .env
 
-Las rutas de las vistas deben estar en inglés.
+5. Migraciones y Datos
+    - php artisan migrate (Solo para la estructura de la BD)
+    - php artisan migrate --seed (Para jalar productos de ct (productos.json))
+    - php artisan app:import-local-products (Para jalar productos externos a CT)
 
-2. Código Backend y Base de Datos Inglés a exepcion de tabla products ya que la tomamos de ct
+    - php artisan storage:link (symlink para que las imagenes sean visibles)
 
-Variables, modelos, relaciones y nombres de columnas en la BD van en inglés.
+Versiones
+    PHP: 8.2
+    Composer: 2.x.
+    MySQL: 8.0 o superior
+    Node.js: 24.14.0
 
-3. Clases CSS e IDs (Inglés)
 
-Para mantener coherencia con frameworks como Bootstrap/Tailwind.
 
-✅ Correcto: <div class="main-card">, <button id="save-btn">
 
-4. Textos Visuales / Interfaz de Usuario (Español)
 
-Lo único que debe ir en español es el texto real que el usuario o el administrador lee en la pantalla.
+Código (Backend/BD/CSS): Todo en Inglés. (Modelos, controladores, variables, clases de Tailwind
+a exepcion de tabla products que esta en español porque se importo de CT).
+
+Interfaz (UI): Todo en Español. (Botones, etiquetas, mensajes de error).
+
+Nomenclatura de Archivos: Las vistas deben seguir la ruta en inglés: resources/views/admin/products/.
