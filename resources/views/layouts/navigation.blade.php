@@ -32,7 +32,7 @@
                 
                 <a href="{{ route('carrito') }}" class="btn btn-outline-light px-3 d-flex align-items-center justify-content-center">
                     <i class="bi bi-cart2 fs-5"></i>
-                    @if(session('cart')) 
+                    @if(session('cart')) {{-- Esto ya lo tenías bien como 'cart' en tu código actual --}}
                         <span class="badge bg-danger ms-2">{{ count(session('cart')) }}</span>
                     @endif
                 </a>

@@ -17,38 +17,34 @@ class CheckoutController extends Controller
 {
     public function index()
     {
-        // 1. Obtener el carrito de la sesión
-        $carrito = session()->get('carrito', []);
+        // CAMBIO: 'carrito' a 'cart'
+        $cart = session()->get('cart', []);
 
-        // Si el carrito está vacío, regresamos a la tienda
-        if (empty($carrito)) {
+        if (empty($cart)) {
             return redirect()->route('products.index')->with('error', 'Tu carrito está vacío.');
         }
 
-        // 2. Calcular el subtotal
         $subtotal = 0;
-        foreach ($carrito as $item) {
-            $subtotal += $item['precio'] * $item['cantidad'];
+        foreach ($cart as $item) { // CAMBIO
+            $subtotal += $item['price'] * $item['quantity']; // CAMBIO
         }
 
-        // 3. Definir costo de envío (puedes hacerlo dinámico después)
         $costoEnvio = 150.00;
         $total = $subtotal + $costoEnvio;
-
-        // 4. Obtener las direcciones del usuario autenticado
         $direcciones = Auth::user()->addresses;
 
-        return view('checkout', compact('carrito', 'subtotal', 'costoEnvio', 'total', 'direcciones'));
+        // CAMBIO: compact('cart', ...)
+        return view('checkout', compact('cart', 'subtotal', 'costoEnvio', 'total', 'direcciones'));
     }
 
     public function process(Request $request)
     {
         // 1. Obtener el carrito de la sesión
-        $carrito = session()->get('carrito', []);
-        
-        if (empty($carrito)) {
-            return redirect()->route('products.index')->with('error', 'Tu carrito está vacío.');
-        }
+        $cart = session()->get('cart', []);
+    
+    if (empty($cart)) {
+        return redirect()->route('products.index')->with('error', 'Tu carrito está vacío.');
+    }
 
         // 2. Validar qué dirección seleccionó (existente o nueva)
         $request->validate([
@@ -95,8 +91,8 @@ class CheckoutController extends Controller
 
             // 4. Calcular los totales de nuevo en el backend (por seguridad)
             $subtotal = 0;
-            foreach ($carrito as $item) {
-                $subtotal += $item['precio'] * $item['cantidad'];
+            foreach ($cart as $item) { // CAMBIO
+                $subtotal += $item['price'] * $item['quantity']; // CAMBIO
             }
             $costoEnvio = 150.00; // Esto puede venir del request (envío express vs estándar) en el futuro
             $total = $subtotal + $costoEnvio;
@@ -119,12 +115,12 @@ class CheckoutController extends Controller
             ]);
 
             // 7. Guardar los Items del pedido
-            foreach ($carrito as $item) {
+            foreach ($cart as $item) { // CAMBIO
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['id'],
-                    'quantity' => $item['cantidad'],
-                    'price' => $item['precio'], // El precio histórico al momento de comprar
+                    'quantity' => $item['quantity'], // CAMBIO
+                    'price' => $item['price'],       // CAMBIO
                 ]);
             }
 
@@ -140,7 +136,7 @@ class CheckoutController extends Controller
             }
 
             // 8. Vaciar el carrito de sesión
-            session()->forget('carrito');
+            session()->forget('cart');
 
             // 9. Mandamos al usuario a la página de éxito
             return redirect()->route('pedido.confirmado')->with('success', '¡Pedido creado con éxito! Tu folio es: ' . $orderNumber);
