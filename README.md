@@ -1,4 +1,6 @@
 Envycom Ecommerce
+
+<!-- Inicializar proyecto -->
 1. Clonar repositorio
 2. Instalar dependencias de PHP:
     - composer install
@@ -15,19 +17,23 @@ Envycom Ecommerce
 
     - php artisan storage:link (symlink para que las imagenes sean visibles)
 
-Versiones
+6. Correr el proyecto
+    - npm run dev
+    - php artisan serv
+
+<!-- Versiones requeridas -->
     PHP: 8.2
     Composer: 2.x.
     MySQL: 8.0 o superior
     Node.js: 24.14.0
 
-
-
-
-
+<!-- Nomenclatura -->
 Código (Backend/BD/CSS): Todo en Inglés. (Modelos, controladores, variables, clases de Tailwind
 a exepcion de tabla products que esta en español porque se importo de CT).
 
 Interfaz (UI): Todo en Español. (Botones, etiquetas, mensajes de error).
 
 Nomenclatura de Archivos: Las vistas deben seguir la ruta en inglés: resources/views/admin/products/.
+
+<!-- Diseño -->
+Clases reutilizables en resources\views\layouts\app.blade.php
