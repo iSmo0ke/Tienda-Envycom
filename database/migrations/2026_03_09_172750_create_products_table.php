@@ -27,6 +27,7 @@ return new class extends Migration
             $table->json('especificaciones')->nullable();
             $table->json('promociones')->nullable();
             $table->string('imagen')->nullable();
+            $table->string('source')->default('local');
             $table->timestamps();
         });
     }
