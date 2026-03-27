@@ -14,9 +14,13 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained();
-            $table->string('order_number')->unique(); // Ej: ENV-2024-001
+            $table->string('order_number')->unique();
             $table->enum('status', ['pendiente', 'pagado', 'en_proceso', 'enviado', 'entregado', 'cancelado'])->default('pendiente');
 
+            //Envio
+            $table->string('shipping_tracking_number')->nullable();
+            $table->string('shipping_carrier')->nullable();
+            
             // Costos
             $table->decimal('subtotal', 12, 2);
             $table->decimal('shipping_cost', 12, 2)->default(0.00);
