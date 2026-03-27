@@ -2,7 +2,6 @@
 
 @section('content')
     <style>
-        /* Reutilizamos tus variables para mantener la identidad */
         :root {
             --envy-lime: #dfff00;
             --envy-dark: #121012;
@@ -32,12 +31,23 @@
             padding: 30px;
         }
 
+        .img-card {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, .06);
+            border: 1px solid #ececec;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
         .product-main-img {
             width: 100%;
-            max-height: 450px;
+            max-height: 550px; 
             object-fit: contain;
             border-radius: 14px;
-            padding: 15px;
         }
 
         .brand-badge {
@@ -57,7 +67,7 @@
             margin-bottom: 20px;
         }
 
-        .btn-envy {
+        .btn-add-cart {
             background: var(--envy-lime);
             border: none;
             color: #111;
@@ -68,7 +78,7 @@
             transition: all 0.3s ease;
         }
 
-        .btn-envy:hover {
+        .btn-add-cart:hover {
             background: #d0ef00;
             color: #111;
             transform: translateY(-2px);
@@ -105,51 +115,55 @@
         </div>
 
         @if(session('success'))
-    <div class="alert alert-success rounded-4 shadow-sm mb-4 fade show" role="alert">
-        {{ session('success') }}
-    </div>
-@endif
+            <div class="alert alert-success rounded-4 shadow-sm mb-4 fade show" role="alert">
+                {{ session('success') }}
+            </div>
+        @endif
 
         <div class="row g-4">
             <div class="col-lg-6">
-                <x-product-image 
-                    :image="$product->imagen" 
-                    :alt="$product->nombre" 
-                    cssClass="w-full h-96 object-contain rounded-lg shadow-md" 
-                />
+                <div class="img-card">
+                    <x-product-image 
+                        :image="$product->imagen" 
+                        :alt="$product->nombre" 
+                        cssClass="product-main-img" 
+                    />
+                </div>
             </div>
 
             <div class="col-lg-6">
-                <div class="detail-card h-100">
-                    <span class="brand-badge">{{ $product->marca ?? 'Sin marca' }}</span>
-                    <h1 class="detail-title mb-3">{{ $product->nombre }}</h1>
+                <div class="detail-card h-100 d-flex flex-column">
+                    <div>
+                        <span class="brand-badge">{{ $product->marca ?? 'Sin marca' }}</span>
+                        <h1 class="detail-title mb-3">{{ $product->nombre }}</h1>
 
-                    <div class="detail-price">
-                        ${{ number_format($product->precio, 2) }} <span class="fs-5 text-secondary">MXN</span>
-                    </div>
+                        <div class="detail-price">
+                            ${{ number_format($product->precio, 2) }} <span class="fs-5 text-secondary">MXN</span>
+                        </div>
 
-                    <p style="color: var(--envy-gray); line-height: 1.6; margin-bottom: 25px;">
-                        {{ $product->descripcion_corta }}
-                    </p>
+                        <p style="color: var(--envy-gray); line-height: 1.6; margin-bottom: 25px;">
+                            {{ $product->descripcion_corta }}
+                        </p>
 
-                    <div class="bg-light p-3 rounded-4 mb-4" style="border: 1px solid #ececec;">
-                        <ul class="list-unstyled info-list mb-0">
-                            <li><strong>Modelo:</strong> {{ $product->modelo }}</li>
-                            <li><strong>Número de Parte:</strong> {{ $product->numParte }}</li>
-                            <li><strong>Categoría:</strong> {{ $product->categoria }} > {{ $product->subcategoria }}</li>
-                            <li>
-                                <strong>Disponibilidad:</strong>
-                                <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">
-                                    Consultar stock en sucursales
-                                </span>
-                            </li>
-                        </ul>
+                        <div class="bg-light p-3 rounded-4 mb-4" style="border: 1px solid #ececec;">
+                            <ul class="list-unstyled info-list mb-0">
+                                <li><strong>Modelo:</strong> {{ $product->modelo }}</li>
+                                <li><strong>Número de Parte:</strong> {{ $product->numParte }}</li>
+                                <li><strong>Categoría:</strong> {{ $product->categoria }} > {{ $product->subcategoria }}</li>
+                                <li>
+                                    <strong>Disponibilidad:</strong>
+                                    <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">
+                                        Consultar stock en sucursales
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
 
                     <form action="{{ route('carrito.add', $product->id) }}" method="POST" class="mt-auto">
                         @csrf
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-envy btn-lg">
+                            <button type="submit" class="btn btn-add-cart btn-lg">
                                 <i class="bi bi-cart-plus me-2"></i> Añadir al carrito
                             </button>
                         </div>
@@ -183,16 +197,16 @@
             </div>
         @endif
     </div>
-@endsection
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const alerta = document.querySelector('.alert-success');
-        if (alerta) {
-            setTimeout(() => {
-                const bsAlert = new bootstrap.Alert(alerta);
-                bsAlert.close();
-            }, 3000);
-        }
-    });
-</script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const alerta = document.querySelector('.alert-success');
+            if (alerta) {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alerta);
+                    bsAlert.close();
+                }, 3000);
+            }
+        });
+    </script>
+@endsection

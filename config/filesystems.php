@@ -38,6 +38,13 @@ return [
             'report' => false,
         ],
 
+        'ftp_ct' => [
+            'driver'   => 'ftp',
+            'host'     => env('CT_FTP_HOST'),
+            'username' => env('CT_FTP_USERNAME'),
+            'password' => env('CT_FTP_PASSWORD'),
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
