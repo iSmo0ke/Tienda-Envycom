@@ -67,7 +67,7 @@
             margin-bottom: 12px;
         }
 
-        .btn-envy {
+        .btn-order-success {
             display: inline-block;
             margin-top: 26px;
             padding: 13px 22px;
@@ -76,6 +76,12 @@
             color: #fff;
             font-weight: 800;
             text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .btn-order-success:hover {
+            opacity: 0.9;
+            color: #fff;
         }
     </style>
 
@@ -107,7 +113,7 @@
                 </div>
             </div>
 
-            <a href="{{ route('profile.pedidos') }}" class="btn-envy">
+            <a href="{{ route('profile.pedidos') }}" class="btn-order-success">
                 Ver mis pedidos
             </a>
         </div>

@@ -3,8 +3,7 @@
 @php
     $subtotal = 0;
     foreach ($cart as $item) {
-        // CAMBIO: $carrito a $cart
-        $subtotal += $item['price'] * $item['quantity']; // CAMBIO: precio/cantidad a price/quantity
+        $subtotal += $item['price'] * $item['quantity'];
     }
     $envio = 0;
     $total = $subtotal + $envio;
@@ -81,29 +80,31 @@
             max-width: 95px;
         }
 
-        .btn-envy {
+        .btn-cart-primary {
             background: var(--envy-lime);
             border: none;
             color: #111;
             font-weight: 700;
             border-radius: 999px;
             padding: 10px 18px;
+            transition: all 0.3s ease;
         }
 
-        .btn-envy:hover {
+        .btn-cart-primary:hover {
             background: #d0ef00;
             color: #111;
         }
 
-        .btn-outline-envy {
+        .btn-cart-outline {
             border: 1px solid #d9d9d9;
             color: var(--envy-gray);
             border-radius: 999px;
             padding: 8px 16px;
             background: #fff;
+            transition: all 0.3s ease;
         }
 
-        .btn-outline-envy:hover {
+        .btn-cart-outline:hover {
             background: #f8f8f8;
         }
 
@@ -158,20 +159,24 @@
             background: none;
             border: none;
             padding: 0;
+            transition: all 0.3s ease;
         }
 
         .remove-link:hover {
             text-decoration: underline;
+            opacity: 0.8;
         }
 
         .continue-link {
             text-decoration: none;
             color: #0b2b57;
             font-weight: 700;
+            transition: all 0.3s ease;
         }
 
         .continue-link:hover {
             text-decoration: underline;
+            opacity: 0.8;
         }
     </style>
 
@@ -200,7 +205,7 @@
                         <i class="bi bi-cart-x"></i>
                         <h3>Tu carrito está vacío</h3>
                         <p>No has agregado productos todavía.</p>
-                        <a href="{{ url('/productos') }}" class="btn btn-envy mt-2">
+                        <a href="{{ url('/productos') }}" class="btn btn-cart-primary mt-2">
                             Ver productos
                         </a>
                     </div>
@@ -209,12 +214,18 @@
                         @foreach ($cart as $item)
                             <div class="cart-item">
                                 <div class="row align-items-center g-3">
-                                    <x-product-image :image="$item['image']" {{-- CAMBIADO --}} :alt="$item['name']"
-                                        {{-- CAMBIADO --}} cssClass="h-16 w-16 object-cover rounded" />
+                                    
+                                    <div class="col-md-2 col-4 d-flex justify-content-center">
+                                        <x-product-image 
+                                            :image="$item['image']" 
+                                            :alt="$item['name']"
+                                            cssClass="product-img" 
+                                        />
+                                    </div>
 
                                     <div class="col-md-4 col-8">
-                                        <div class="brand">{{ $item['brand'] ?? 'MARCA' }}</div> {{-- CAMBIADO --}}
-                                        <div class="product-name">{{ $item['name'] }}</div> {{-- CAMBIADO --}}
+                                        <div class="brand">{{ $item['brand'] ?? 'MARCA' }}</div>
+                                        <div class="product-name">{{ $item['name'] }}</div>
                                         <div class="small text-secondary">
                                             SKU: {{ $item['sku'] ?? 'N/A' }}
                                         </div>
@@ -224,8 +235,8 @@
                                         <label class="form-label small text-secondary mb-1">Cantidad</label>
                                         <form action="{{ route('carrito.update', $item['id']) }}" method="POST">
                                             @csrf
-                                            <input type="number" name="cantidad" {{-- Se queda 'cantidad' porque es lo que espera el Request en el Controller --}}
-                                                value="{{ $item['quantity'] }}" {{-- CAMBIADO --}} min="1"
+                                            <input type="number" name="cantidad"
+                                                value="{{ $item['quantity'] }}" min="1"
                                                 class="form-control qty-box" onchange="this.form.submit()">
                                         </form>
                                     </div>
@@ -233,7 +244,7 @@
                                     <div class="col-md-2 col-6">
                                         <label class="form-label small text-secondary mb-1">Precio</label>
                                         <div class="product-price">
-                                            ${{ number_format($item['price'], 2) }} {{-- CAMBIADO --}}
+                                            ${{ number_format($item['price'], 2) }}
                                         </div>
                                     </div>
 
@@ -281,13 +292,13 @@
                     </div>
 
                     <div class="d-grid mt-4">
-                        <a href="{{ url('/checkout') }}" class="btn btn-envy btn-lg">
+                        <a href="{{ url('/checkout') }}" class="btn btn-cart-primary btn-lg text-center">
                             Confirmar pedido
                         </a>
                     </div>
 
                     <div class="d-grid mt-2">
-                        <a href="{{ url('/productos') }}" class="btn btn-outline-envy">
+                        <a href="{{ url('/productos') }}" class="btn btn-cart-outline text-center text-decoration-none">
                             Seguir comprando
                         </a>
                     </div>
@@ -297,7 +308,7 @@
                             <form action="{{ route('carrito.clear') }}" method="POST">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-outline-envy w-100">
+                                <button type="submit" class="btn btn-cart-outline w-100">
                                     Vaciar carrito
                                 </button>
                             </form>
