@@ -16,6 +16,25 @@ use Illuminate\Support\Facades\Http;
 
 class CheckoutController extends Controller
 {
+    public function searchSepomexByZip(Request $request)
+    {
+        $validated = $request->validate([
+            'zip_code' => 'required|digits:5',
+        ]);
+
+        $results = DB::table('postal_codes')
+            ->select('id', 'zip_code', 'settlement', 'settlement_type', 'municipality', 'state', 'city')
+            ->where('zip_code', $validated['zip_code'])
+            ->orderBy('settlement')
+            ->limit(100)
+            ->get();
+
+        return response()->json([
+            'results' => $results,
+        ]);
+    }
+
+    // PASO 1: Mostrar la pantalla de dirección
     public function index()
     {
         $cart = session()->get('cart', []);
@@ -31,7 +50,7 @@ class CheckoutController extends Controller
 
         $costoEnvio = 150.00;
         $total = $subtotal + $costoEnvio;
-        $direcciones = Auth::user()->addresses;
+        $direcciones = Auth::user()->addresses()->with('postalCode')->get();
 
         return view('checkout', compact('cart', 'subtotal', 'costoEnvio', 'total', 'direcciones'));
     }
@@ -52,26 +71,63 @@ class CheckoutController extends Controller
         $direccionSnapshot = '';
 
         if ($request->address_id === 'new') {
-            $nuevaDireccion = Address::create([
-                'user_id' => $user->id,
-                'receptor_name' => $request->receptor_name ?? $user->name,
-                'phone' => $request->phone,
-                'calle_numero' => $request->calle_numero,
-                'colonia' => $request->colonia,
-                'municipio_alcaldia' => $request->municipio_alcaldia,
-                'estado' => $request->estado,
-                'codigo_postal' => $request->codigo_postal,
-                'referencias' => $request->referencias,
-                'is_default' => Address::where('user_id', $user->id)->count() === 0 ? true : false,
+            $validated = $request->validate([
+                'alias' => 'nullable|string|max:150',
+                'receptor_name' => 'required|string|max:150',
+                'telefono' => 'required|string|max:30',
+                'calle' => 'required|string|max:255',
+                'numero_exterior' => 'nullable|string|max:50',
+                'numero_interior' => 'nullable|string|max:50',
+                'referencias' => 'nullable|string|max:1000',
+                'zip_code' => 'required|digits:5',
+                'sepomex_id' => 'required|uuid|exists:postal_codes,id',
             ]);
 
-            $direccionSnapshot = "Recibe: {$nuevaDireccion->receptor_name}. Calle: {$nuevaDireccion->calle_numero}, Col. {$nuevaDireccion->colonia}, {$nuevaDireccion->municipio_alcaldia}, {$nuevaDireccion->estado}. CP: {$nuevaDireccion->codigo_postal}. Tel: {$nuevaDireccion->phone}. Refs: {$nuevaDireccion->referencias}";
+            $sepomex = DB::table('postal_codes')
+                ->where('id', $validated['sepomex_id'])
+                ->first();
+
+            if (!$sepomex || $sepomex->zip_code !== $validated['zip_code']) {
+                return redirect()->back()
+                    ->withErrors(['sepomex_id' => 'Selecciona una opción válida del catálogo SEPOMEX para ese código postal.'])
+                    ->withInput();
+            }
+
+            $nuevaDireccion = Address::create([
+                'user_id' => $user->id,
+                'sepomex_id' => $sepomex->id,
+                'calle' => $validated['calle'],
+                'alias' => $validated['alias'] ?? null,
+                'is_default' => Address::where('user_id', $user->id)->count() === 0,
+                'numero_exterior' => $validated['numero_exterior'] ?? null,
+                'receptor_name' => $validated['receptor_name'] ?? $user->name,
+                'numero_interior' => $validated['numero_interior'] ?? null,
+                'referencias' => $validated['referencias'] ?? null,
+                'telefono' => $validated['telefono'],
+            ]);
+
+            $numeroExterior = $nuevaDireccion->numero_exterior ? ' ' . $nuevaDireccion->numero_exterior : '';
+            $numeroInterior = $nuevaDireccion->numero_interior ? ' Int. ' . $nuevaDireccion->numero_interior : '';
+            $referencias = $nuevaDireccion->referencias ?: 'Sin referencias';
+
+            $direccionSnapshot = "Recibe: {$nuevaDireccion->receptor_name}. Calle: {$nuevaDireccion->calle}{$numeroExterior}{$numeroInterior}, Col. {$sepomex->settlement}, {$sepomex->municipality}, {$sepomex->state}. CP: {$sepomex->zip_code}. Tel: {$nuevaDireccion->telefono}. Refs: {$referencias}";
         } else {
-            $direccionExistente = Address::findOrFail($request->address_id);
+            $direccionExistente = Address::with('postalCode')->findOrFail($request->address_id);
             if ($direccionExistente->user_id !== $user->id) {
                 abort(403, 'Acción no autorizada.');
             }
-            $direccionSnapshot = "Recibe: {$direccionExistente->receptor_name}. Calle: {$direccionExistente->calle_numero}, Col. {$direccionExistente->colonia}, {$direccionExistente->municipio_alcaldia}, {$direccionExistente->estado}. CP: {$direccionExistente->codigo_postal}. Tel: {$direccionExistente->phone}. Refs: {$direccionExistente->referencias}";
+
+            $sepomex = $direccionExistente->postalCode;
+            $numeroExterior = $direccionExistente->numero_exterior ? ' ' . $direccionExistente->numero_exterior : '';
+            $numeroInterior = $direccionExistente->numero_interior ? ' Int. ' . $direccionExistente->numero_interior : '';
+            $zipCode = $sepomex->zip_code ?? 'N/D';
+            $settlement = $sepomex->settlement ?? 'N/D';
+            $municipality = $sepomex->municipality ?? 'N/D';
+            $state = $sepomex->state ?? 'N/D';
+            $telefono = $direccionExistente->telefono ?? 'N/D';
+            $referencias = $direccionExistente->referencias ?: 'Sin referencias';
+
+            $direccionSnapshot = "Recibe: {$direccionExistente->receptor_name}. Calle: {$direccionExistente->calle}{$numeroExterior}{$numeroInterior}, Col. {$settlement}, {$municipality}, {$state}. CP: {$zipCode}. Tel: {$telefono}. Refs: {$referencias}";
         }
 
         session()->put('checkout_address', $direccionSnapshot);
