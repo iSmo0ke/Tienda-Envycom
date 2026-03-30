@@ -44,7 +44,6 @@ class CheckoutController extends Controller
         $user = Auth::user();
 
         if ($request->address_id === 'new') {
-            // Aplicamos MAP: Solo tomamos campos de la dirección
             $addressData = $request->only([
                 'receptor_name',
                 'phone',
@@ -57,13 +56,22 @@ class CheckoutController extends Controller
             ]);
 
             $nuevaDireccion = Address::create(array_merge($addressData, ['user_id' => $user->id]));
-            $direccionSnapshot = "Recibe: {$nuevaDireccion->receptor_name}. Calle: {$nuevaDireccion->calle_numero}...";
+
+            $direccionSnapshot = "Recibe: {$nuevaDireccion->receptor_name}. Calle: {$nuevaDireccion->calle_numero}";
         } else {
             $direccionExistente = Address::findOrFail($request->address_id);
-            // ... validación de propiedad y snapshot
+
+            // Validación de seguridad
+            if ($direccionExistente->user_id !== $user->id) {
+                abort(403);
+            }
+
+            // se genera un snapshot de la dirección para guardarlo en la orden, así no se pierde información aunque el usuario borre o edite la dirección después
+            $direccionSnapshot = "Recibe: {$direccionExistente->receptor_name}. Calle: {$direccionExistente->calle_numero}";
         }
 
         session()->put('checkout_address', $direccionSnapshot);
+
         return redirect()->route('checkout.payment');
     }
 
