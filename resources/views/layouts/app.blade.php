@@ -10,6 +10,15 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
     <style>
+
+        /* --- Clases reutilizables ENVYCOM --- */
+        .link-unstyled { text-decoration: none; color: inherit; }
+        .text-brand { font-size: 0.75rem; letter-spacing: 0.5px; }
+        .text-product-title { font-size: 0.9rem; line-height: 1.2; }
+        .carousel-btn-custom { width: 40px; }
+        .carousel-icon-custom { background-color: #212529; border-radius: 50%; padding: 0.5rem; }
+
+        
         body { background: #f5f6f8; font-family: 'Segoe UI', sans-serif; }
         .navbar { background: #0c2b45; }
         .logo { height: 40px; }
@@ -25,25 +34,25 @@
 
 
         /* Botón Flotante de WhatsApp */
-.whatsapp-float {
-    position: fixed; /* Esto es lo que lo hace flotar */
-    width: 60px;
-    height: 60px;
-    bottom: 40px; /* Distancia desde abajo */
-    right: 40px; /* Distancia desde la derecha */
-    background-color: #25d366; /* Color oficial de WhatsApp */
-    color: #FFF;
-    border-radius: 50px; /* Lo hace completamente redondo */
-    text-align: center;
-    font-size: 30px; /* Tamaño del ícono */
-    box-shadow: 2px 2px 10px rgba(0,0,0,0.2); /* Sombrita para que resalte */
-    z-index: 1000; /* Asegura que siempre esté por encima de las fotos y el footer */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    transition: all 0.3s ease; /* Efecto suave de movimiento */
-}
+        .whatsapp-float {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            bottom: 40px;
+            right: 40px;
+            background-color: #25d366;
+            color: #FFF;
+            border-radius: 50px;
+            text-align: center;
+            font-size: 30px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
 
 /* Efecto cuando pasan el mouse por encima */
 .whatsapp-float:hover {

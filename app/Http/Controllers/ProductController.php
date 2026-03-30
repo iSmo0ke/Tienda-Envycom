@@ -9,7 +9,6 @@ class ProductController extends Controller
 {
     public function index()
     {
-        // Traemos los productos activos, paginados de 12 en 12
         $products = Product::where('activo', true)->paginate(12);
 
         return view('products.index', compact('products'));
@@ -32,11 +31,7 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        // Buscamos el producto por ID, si no existe lanza error 404
         $product = Product::findOrFail($id);
-
-        // dd($product->toArray());
-
         return view('products.show', compact('product'));
     }
 }

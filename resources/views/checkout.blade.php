@@ -139,7 +139,7 @@
         <form action="{{ route('checkout.processAddress') }}" method="POST">
             @csrf <div class="row g-4">
                 <div class="col-lg-8">
-<div class="checkout-card mb-4">
+                    <div class="checkout-card mb-4">
                         <h2 class="section-title">Dirección de envío</h2>
 
                         @if ($direcciones->count() > 0)

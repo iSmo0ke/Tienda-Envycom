@@ -58,7 +58,8 @@
             border-bottom: 1px solid #f1f1f1;
         }
 
-        .product-image {
+        /* Usamos img-fluid para que respete el contenedor */
+        .product-image-wrap img {
             max-width: 100%;
             max-height: 180px;
             object-fit: contain;
@@ -132,32 +133,6 @@
             color: var(--envy-gray);
         }
 
-        .pagination-wrapper {
-            margin-top: 32px;
-        }
-
-        .pagination-wrapper nav {
-            display: flex;
-            justify-content: center;
-        }
-
-        .pagination-wrapper nav>div:first-child {
-            display: none !important;
-        }
-
-        .pagination-wrapper nav svg,
-        nav[role="navigation"] svg {
-            width: 14px !important;
-            height: 14px !important;
-        }
-
-        .pagination-wrapper nav span,
-        .pagination-wrapper nav a,
-        nav[role="navigation"] span,
-        nav[role="navigation"] a {
-            font-size: 14px !important;
-        }
-
         @media (max-width: 768px) {
             .catalog-title {
                 font-size: 2.2rem;
@@ -173,56 +148,45 @@
             }
 
             .product-link:hover .product-name {
-                color: #007bff;
-                /* O el color de tu marca */
+                color: #0b2b57; /* Cambiado a tu color Envy Blue */
                 text-decoration: underline;
-            }
-
-            /* Transición suave para la imagen */
-            .zoom-effect {
-                transition: transform 0.4s ease;
-            }
-
-            /* Efecto de crecer al pasar el mouse sobre toda la tarjeta */
-            .product-card:hover .zoom-effect {
-                transform: scale(1.08);
-                /* Crece un 8% */
             }
         }
     </style>
 
     <div class="container catalog-wrapper">
         <h1 class="catalog-title">Catálogo de Productos</h1>
+        
         @if(session('success'))
-    <div class="alert alert-success rounded-4 shadow-sm mb-4 fade show" role="alert">
-        {{ session('success') }}
-    </div>
-@endif
+            <div class="alert alert-success rounded-4 shadow-sm mb-4 fade show" role="alert">
+                {{ session('success') }}
+            </div>
+        @endif
 
         @if ($products->count())
             <div class="products-grid">
                 @foreach ($products as $product)
                     <div class="product-card">
-                        <div class="product-image-wrap">
-                            <a href="{{ route('products.show', $product->id) }}">
+                        
+                        {{-- Todo el contenido clickeable (Imagen + Textos) envuelto en un solo enlace --}}
+                        <a href="{{ route('products.show', $product->id) }}" class="product-link" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; flex-grow: 1;">
+                            
+                            <div class="product-image-wrap">
+                                {{-- Quitamos las clases de Tailwind y usamos las puras de Bootstrap/CSS --}}
                                 <x-product-image 
                                     :image="$product->imagen" 
-                                    :alt="$product->nombre" cssClass="w-full h-64 object-contain p-2" 
+                                    :alt="$product->nombre" 
+                                    cssClass="img-fluid" 
                                 />
+                            </div>
 
-                            </a>
-                        </div>
-
-
-                        <div class="product-body">
-                            <a href="{{ route('products.show', $product->id) }}" class="product-link"
-                                style="text-decoration: none; color: inherit;">
+                            <div class="product-body">
                                 <div class="product-brand">
                                     {{ $product->marca ?? 'Sin marca' }}
                                 </div>
 
                                 <div class="product-name">
-                                    <strong>{{ $product->nombre }}</strong>
+                                    {{ $product->nombre }}
                                 </div>
 
                                 <div class="product-desc">
@@ -232,38 +196,44 @@
                                 <div class="product-price">
                                     ${{ number_format($product->precio, 2) }} MXN
                                 </div>
-                            </a>
-
-                            <div class="product-actions">
-                                <form action="{{ route('carrito.add', $product->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn-cart">Añadir al carrito</button>
-                        </form>
                             </div>
+                            
+                        </a>
+
+                        {{-- El botón de agregar al carrito queda fuera del enlace principal para que funcione el formulario --}}
+                        <div class="product-actions" style="padding: 0 18px 20px;">
+                            <form action="{{ route('carrito.add', $product->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn-cart">
+                                    <i class="bi bi-cart-plus me-1"></i> Añadir al carrito
+                                </button>
+                            </form>
                         </div>
+                        
                     </div>
                 @endforeach
             </div>
 
-            <div class="pagination-wrapper">
+            <div class="pagination-wrapper mt-4 d-flex justify-content-center">
                 {{ $products->links() }}
             </div>
         @else
             <div class="empty-products">
+                <i class="bi bi-box-seam fs-1 text-muted d-block mb-3"></i>
                 No hay productos disponibles por el momento.
             </div>
         @endif
     </div>
-@endsection
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const alerta = document.querySelector('.alert-success');
-        if (alerta) {
-            setTimeout(() => {
-                const bsAlert = new bootstrap.Alert(alerta);
-                bsAlert.close();
-            }, 3000);
-        }
-    });
-</script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const alerta = document.querySelector('.alert-success');
+            if (alerta) {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alerta);
+                    bsAlert.close();
+                }, 3000);
+            }
+        });
+    </script>
+@endsection

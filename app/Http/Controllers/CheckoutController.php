@@ -55,7 +55,6 @@ class CheckoutController extends Controller
         return view('checkout', compact('cart', 'subtotal', 'costoEnvio', 'total', 'direcciones'));
     }
 
-    // PASO 1.5: Guardar dirección en sesión y mandar a pagar
     public function processAddress(Request $request)
     {
         $cart = session()->get('cart', []);
@@ -131,14 +130,11 @@ class CheckoutController extends Controller
             $direccionSnapshot = "Recibe: {$direccionExistente->receptor_name}. Calle: {$direccionExistente->calle}{$numeroExterior}{$numeroInterior}, Col. {$settlement}, {$municipality}, {$state}. CP: {$zipCode}. Tel: {$telefono}. Refs: {$referencias}";
         }
 
-        // GUARDAMOS EL SNAPSHOT EN LA SESIÓN TEMPORALMENTE
         session()->put('checkout_address', $direccionSnapshot);
 
-        // Redirigimos al Paso 2
         return redirect()->route('checkout.payment');
     }
 
-    // PASO 2: Mostrar pantalla de tarjeta (La que hicimos en el mensaje anterior)
     public function payment()
     {
         $cart = session()->get('cart', []);
@@ -147,7 +143,6 @@ class CheckoutController extends Controller
             return redirect()->route('products.index');
         }
 
-        // Si quisieron brincarse el paso de dirección, los regresamos
         if (!session()->has('checkout_address')) {
             return redirect()->route('checkout.index')->with('error', 'Por favor selecciona una dirección de envío.');
         }
@@ -159,19 +154,15 @@ class CheckoutController extends Controller
         $costoEnvio = 150.00;
         $total = $subtotal + $costoEnvio;
 
-        // Mandamos la variable $total a la vista payment.blade.php
         return view('payment', compact('total'));
     }
 
-    // PASO 3: Recibir el Token y realizar la magia
     public function process(Request $request)
     {
-        // 1. Validamos que el Token y la Sesión hayan llegado
         $request->validate([
             'token_id' => 'required',
             'device_session_id' => 'required'
         ]);
-        // 1. Validamos que el Token haya llegado
         $request->validate(['token_id' => 'required']);
 
         $cart = session()->get('cart', []);
@@ -179,7 +170,6 @@ class CheckoutController extends Controller
             return redirect()->route('products.index');
         }
 
-        // 2. Recalculamos el Total (¡Regla de oro: NUNCA confíes en el total que viene del frontend!)
         $subtotal = 0;
         foreach ($cart as $item) {
             $subtotal += $item['price'] * $item['quantity'];
@@ -190,7 +180,6 @@ class CheckoutController extends Controller
         $user = Auth::user();
 
         try {
-            // 3. Hablamos con la API de Openpay para hacer el cargo real
             $response = Http::withBasicAuth(config('services.openpay.private_key'), '')
                 ->post('https://sandbox-api.openpay.mx/v1/' . config('services.openpay.merchant_id') . '/charges', [
                     'method' => 'card',
@@ -205,23 +194,16 @@ class CheckoutController extends Controller
                     ]
                 ]);
 
-            // 4. Si Openpay rechaza la tarjeta (ej. sin fondos, token expirado)
             if ($response->failed()) {
                 $error = $response->json();
-                // Traducimos el error técnico a algo entendible
                 $mensaje = $error['description'] ?? 'El banco rechazó la transacción.';
                 return redirect()->route('checkout.payment')->with('error', 'Pago declinado: ' . $mensaje);
             }
 
-            // 5. ¡PAGO APROBADO! Guardamos la respuesta de Openpay
             $charge = $response->json();
 
-            // =========================================================
-            // A PARTIR DE AQUÍ, ES TU CÓDIGO ORIGINAL PARA CREAR LA ORDEN
-            // =========================================================
             DB::beginTransaction();
 
-            // Obtenemos el snapshot de la dirección que guardamos en el Paso 1
             $direccionSnapshot = session()->get('checkout_address', 'Dirección no registrada');
 
             $ultimoPedido = Order::latest('id')->first();
@@ -231,13 +213,13 @@ class CheckoutController extends Controller
             $order = Order::create([
                 'user_id' => $user->id,
                 'order_number' => $orderNumber,
-                'status' => 'en_proceso', // ¡Ya está pagado, pasa a en proceso!
+                'status' => 'en_proceso',
                 'subtotal' => $subtotal,
                 'shipping_cost' => $costoEnvio,
                 'total' => $total,
                 'shipping_address' => $direccionSnapshot,
                 'payment_method' => 'openpay_card',
-                'payment_id' => $charge['id'], // ¡Guardamos el ID de rastreo del banco!
+                'payment_id' => $charge['id'],
             ]);
 
             foreach ($cart as $item) {
@@ -251,18 +233,14 @@ class CheckoutController extends Controller
 
             DB::commit();
 
-            // Intentamos enviar el correo
             try {
                 Mail::to($user->email)->send(new OrderConfirmed($order));
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Fallo correo: ' . $e->getMessage());
             }
 
-            // 6. Limpiamos la casa
             session()->forget(['cart', 'checkout_address']);
 
-            // 7. Redirigimos al triunfo
-            // (Asegúrate de tener esta ruta/vista creada en tu web.php)
             return redirect()->route('pedido.confirmado')->with('success', '¡Pago exitoso! Tu folio es: ' . $orderNumber);
 
         } catch (\Exception $e) {
