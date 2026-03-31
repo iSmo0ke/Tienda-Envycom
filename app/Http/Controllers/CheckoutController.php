@@ -44,30 +44,32 @@ class CheckoutController extends Controller
         $user = Auth::user();
 
         if ($request->address_id === 'new') {
-            $addressData = $request->only([
-                'receptor_name',
-                'phone',
-                'calle_numero',
-                'colonia',
-                'municipio_alcaldia',
-                'estado',
-                'codigo_postal',
-                'referencias'
+
+            $validated = $request->validated();
+
+            $nuevaDireccion = Address::create([
+                'user_id' => $user->id,
+                'receptor_name' => $validated['receptor_name'],
+                'phone' => $validated['phone'],
+                'calle_numero' => $validated['calle_numero'],
+                'colonia' => $validated['colonia'],
+                'municipio_alcaldia' => $validated['municipio_alcaldia'],
+                'estado' => $validated['estado'],
+                'codigo_postal' => $validated['codigo_postal'],
+                'referencias' => $validated['referencias'] ?? null,
             ]);
 
-            $nuevaDireccion = Address::create(array_merge($addressData, ['user_id' => $user->id]));
-
-            $direccionSnapshot = "Recibe: {$nuevaDireccion->receptor_name}. Calle: {$nuevaDireccion->calle_numero}";
+            $direccionSnapshot = "Recibe: {$nuevaDireccion->receptor_name}. Calle: {$nuevaDireccion->calle_numero}, Col. {$nuevaDireccion->colonia}, {$nuevaDireccion->municipio_alcaldia}, {$nuevaDireccion->estado}, CP: {$nuevaDireccion->codigo_postal}";
         } else {
+
             $direccionExistente = Address::findOrFail($request->address_id);
 
-            // Validación de seguridad
+            //Seguridad: evitar que use direcciones de otros usuarios
             if ($direccionExistente->user_id !== $user->id) {
                 abort(403);
             }
 
-            // se genera un snapshot de la dirección para guardarlo en la orden, así no se pierde información aunque el usuario borre o edite la dirección después
-            $direccionSnapshot = "Recibe: {$direccionExistente->receptor_name}. Calle: {$direccionExistente->calle_numero}";
+            $direccionSnapshot = "Recibe: {$direccionExistente->receptor_name}. Calle: {$direccionExistente->calle_numero}, Col. {$direccionExistente->colonia}, {$direccionExistente->municipio_alcaldia}, {$direccionExistente->estado}, CP: {$direccionExistente->codigo_postal}";
         }
 
         session()->put('checkout_address', $direccionSnapshot);
