@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreProductRequest;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,9 +15,9 @@ class ProductController extends Controller
         // Traemos solo los productos locales (puedes filtrarlos si agregas una columna 'source' después, 
         // por ahora traemos los más recientes)
         $products = Product::where('source', 'local')
-                           ->orderBy('created_at', 'desc')
-                           ->paginate(15);
-        
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
         return view('admin.products.index', compact('products'));
     }
 
@@ -25,41 +26,28 @@ class ProductController extends Controller
         return view('admin.products.create');
     }
 
-public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|max:255',
-            'brand' => 'nullable|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'short_description' => 'nullable|string',
-            'stock' => 'nullable|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Validamos que sea imagen (máx 2MB)
+       
+        $safeData = $request->only([
+            'nombre',
+            'numParte',
+            'precio',
+            'marca',
+            'categoria',
+            'modelo',
+            'descripcion_corta'
         ]);
 
-        // Lógica de subida de imagen
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            // Se guardará en storage/app/public/products
-            $imagePath = $request->file('image')->store('products', 'public');
-        }
-
-        $product = new Product();
-        $product->idProducto = rand(10000000, 99999999); 
-        $product->nombre = $validatedData['name'];
-        $product->numParte = $validatedData['sku'];
-        $product->marca = $validatedData['brand'];
-        $product->precio = $validatedData['price'];
-        $product->descripcion_corta = $validatedData['short_description'];
-        $product->activo = true;
-        $product->existencia = ['local' => $validatedData['stock'] ?? 0]; 
-        $product->imagen = $imagePath; // Guardamos la ruta
-        $product->source = 'local'; // Etiquetamos como producto nuestro
-        
-        $product->save();
+        // forzamos valores que no vienen del formulario por seguridad
+        $product = Product::create(array_merge($safeData, [
+            'source' => 'LOCAL',
+            'activo' => $request->has('activo'),
+            'existencia' => json_encode(['total' => 0]), // inicializar stock
+        ]));
 
         return redirect()->route('admin.products.index')
-                         ->with('success', 'Producto creado exitosamente.');
+            ->with('success', 'Producto creado exitosamente.');
     }
 
     public function edit(Product $product)
@@ -82,14 +70,14 @@ public function store(Request $request)
 
         // 2. Manejo de la imagen
         // Conservamos la ruta de la imagen actual por defecto
-        $imagePath = $product->imagen; 
+        $imagePath = $product->imagen;
 
         if ($request->hasFile('image')) {
             // Si el producto ya tenía una imagen local, la borramos del disco para ahorrar espacio
             if ($product->imagen && !str_starts_with($product->imagen, 'http')) {
                 Storage::disk('public')->delete($product->imagen);
             }
-            
+
             // Subimos la nueva imagen
             $imagePath = $request->file('image')->store('products', 'public');
         }
@@ -111,13 +99,13 @@ public function store(Request $request)
 
         // 5. Redireccionamos con mensaje de éxito
         return redirect()->route('admin.products.index')
-                         ->with('success', 'Producto actualizado exitosamente.');
+            ->with('success', 'Producto actualizado exitosamente.');
     }
 
     public function destroy(Product $product)
     {
         $product->delete();
         return redirect()->route('admin.products.index')
-                         ->with('success', 'Producto eliminado exitosamente.');
+            ->with('success', 'Producto eliminado exitosamente.');
     }
 }
