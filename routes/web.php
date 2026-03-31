@@ -10,10 +10,13 @@ use App\Http\Controllers\CheckoutController;
 
 
 Route::get('/', function () {return view('welcome');});
-// routes/web.php
-Route::get('/dashboard', [ProfileController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+Route::get('/dashboard', function (Request $request) {
+
+    $pedidos = \App\Models\Order::where('user_id', $request->user()->id)
+                                ->orderBy('created_at', 'desc')
+                                ->get();
+                                
+    return view('dashboard', compact('pedidos'));})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/terminos-y-condiciones', function () {return view('legal.terminos');})->name('legal.terminos');
 Route::get('/aviso-de-privacidad', function () {return view('legal.privacidad');})->name('legal.privacidad');
@@ -82,7 +85,6 @@ Route::middleware('auth')->group(function () {
 
     // Flujo de Checkout
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::get('/checkout/sepomex/search', [CheckoutController::class, 'searchSepomexByZip'])->name('checkout.sepomex.search');
     Route::post('/checkout/address', [CheckoutController::class, 'processAddress'])->name('checkout.processAddress'); // Guarda dirección
     Route::get('/checkout/payment', [CheckoutController::class, 'payment'])->name('checkout.payment'); // Muestra Openpay
     Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process'); // Cobra

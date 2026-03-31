@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
-use App\Http\Requests\Admin\UpdateOrderStatusRequest;
 
 class OrderController extends Controller
 {
@@ -23,10 +22,32 @@ class OrderController extends Controller
         return view('admin.orders.show', compact('order'));
     }
 
-    public function update(UpdateOrderStatusRequest $request, Order $order)
+    public function update(Request $request, $id)
     {
-        // Actualizamos el estado del pedido
-        $order->update($request->only(['status']));
-        return back()->with('success', 'El estado del pedido ha sido actualizado.');
+        $order = \App\Models\Order::findOrFail($id);
+
+        $request->validate([
+            'status' => 'required|string',
+            'shipping_carrier' => 'nullable|string',
+            'tracking_number' => 'nullable|string',
+        ]);
+
+        $order->status = $request->status;
+        
+        if (in_array($request->status, ['enviado', 'entregado'])) {
+            $order->shipping_carrier = $request->shipping_carrier;
+            $order->tracking_number = $request->tracking_number;
+            
+            if ($request->status === 'enviado' && is_null($order->shipped_at)) {
+                $order->shipped_at = now();
+            }
+        } else {
+            $order->shipping_carrier = null;
+            $order->tracking_number = null;
+            $order->shipped_at = null;
+        }
+        $order->save();
+
+        return redirect()->back()->with('success', 'Estatus y guía de envío actualizados correctamente.');
     }
 }

@@ -43,12 +43,18 @@ class CartController extends Controller
         $cart = session()->get('cart', []);
 
         if (isset($cart[$id])) {
-            $cart[$id]['quantity'] = $request->input('quantity'); // CAMBIO: 'cantidad' a 'quantity'
-            session()->put('cart', $cart);
+            $quantity = (int) $request->cantidad; // Si el name del input en HTML sigue siendo 'cantidad', déjalo así aquí
 
-            return redirect()->route('carrito')->with('success', 'Cantidad actualizada');
+            if ($quantity <= 0) {
+                unset($cart[$id]);
+            } else {
+                $cart[$id]['quantity'] = $quantity;
+            }
+
+            session()->put('cart', $cart);
         }
-        return redirect()->route('carrito')->with('error', 'Producto no encontrado en el carrito');
+
+        return redirect()->route('carrito');
     }
 
     public function remove($id)

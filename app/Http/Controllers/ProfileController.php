@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 use App\Models\Address;
 
 use App\Http\Requests\ProfileUpdateRequest;
-use App\Http\Requests\StoreAddressRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,15 +15,6 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      */
-    public function index(Request $request)
-    {
-        $pedidos = \App\Models\Order::where('user_id', $request->user()->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('dashboard', compact('pedidos'));
-    }
-
     public function edit(Request $request): View
     {
         return view('profile.edit', [
@@ -69,26 +59,38 @@ class ProfileController extends Controller
         return Redirect::to('/');
     }
 
-    public function storeAddress(StoreAddressRequest $request)
+    public function storeAddress(Request $request)
     {
-        // 🔹 APLICANDO MAP: Solo tomamos lo que definimos en el Request
-        $safeData = $request->only([
-            'receptor_name',
-            'phone',
-            'calle_numero',
-            'colonia',
-            'municipio_alcaldia',
-            'estado',
-            'codigo_postal',
-            'referencias'
+        $request->validate([
+            'receptor_name'      => 'required|string|max:255',
+            'phone'              => 'required|string|max:20',
+            'calle_numero'       => 'required|string|max:255',
+            'colonia'            => 'required|string|max:255',
+            'municipio_alcaldia' => 'required|string|max:255',
+            'codigo_postal'      => 'required|string|max:10',
+            'estado'             => 'required|string|max:255',
+            'referencias'        => 'nullable|string|max:500',
         ]);
 
-        // Crear la dirección vinculada al usuario logueado
-        Address::create(array_merge($safeData, [
-            'user_id' => Auth::id(),
-            'is_default' => Address::where('user_id', Auth::id())->count() === 0 // Si es la primera dirección, la marcamos como default
-            ]));
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
-        return back()->with('success', 'Dirección agregada correctamente.');
+        // Si es su primera dirección, la hacemos predeterminada
+        $isDefault = $user->addresses()->count() === 0 ? true : false;
+
+        $user->addresses()->create([
+            'receptor_name'      => $request->receptor_name,
+            'phone'              => $request->phone,
+            'calle_numero'       => $request->calle_numero,
+            'colonia'            => $request->colonia,
+            'municipio_alcaldia' => $request->municipio_alcaldia,
+            'codigo_postal'      => $request->codigo_postal,
+            'estado'             => $request->estado,
+            'referencias'        => $request->referencias,
+            'is_default'         => $isDefault,
+        ]);
+
+        // Regresa al dashboard y activa la pestaña de direcciones
+        return redirect()->back()->with('success', '¡Dirección agregada a tu libreta!');
     }
 }
