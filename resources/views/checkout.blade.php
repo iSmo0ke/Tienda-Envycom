@@ -114,6 +114,11 @@
         .btn-envy:hover {
             background: #d3f200;
         }
+
+        .sepomex-feedback {
+            font-size: 0.9rem;
+            margin-top: 6px;
+        }
     </style>
 
     <div class="container checkout-wrapper">
@@ -144,8 +149,9 @@
                                     <option value="">-- Selecciona una dirección --</option>
                                     @foreach ($direcciones as $direccion)
                                         <option value="{{ $direccion->id }}" {{ $direccion->is_default ? 'selected' : '' }}>
-                                            {{ $direccion->alias ?? 'Dirección' }} - {{ $direccion->calle_numero }},
-                                            {{ $direccion->colonia }} (CP: {{ $direccion->codigo_postal }})
+                                            {{ $direccion->alias ?? 'Dirección' }} - {{ $direccion->calle }}
+                                            {{ $direccion->numero_exterior ?? '' }}
+                                            (CP: {{ $direccion->postalCode->zip_code ?? 'N/D' }})
                                         </option>
                                     @endforeach
                                     <option value="new">+ Agregar nueva dirección</option>
@@ -159,39 +165,53 @@
                             <h5 class="form-label mb-3">Ingresar nueva dirección</h5>
                             <div class="row g-3">
                                 <div class="col-md-6">
+                                    <label class="form-label">Alias (Opcional)</label>
+                                    <input type="text" name="alias" class="form-control"
+                                        placeholder="Casa, Oficina..." value="{{ old('alias') }}">
+                                </div>
+                                <div class="col-md-6">
                                     <label class="form-label">Quien recibe (Nombre completo)</label>
                                     <input type="text" name="receptor_name" class="form-control"
-                                        placeholder="Nombre de quien recibe" value="{{ auth()->user()->name }}">
+                                        placeholder="Nombre de quien recibe" value="{{ old('receptor_name', auth()->user()->name) }}">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Teléfono</label>
-                                    <input type="text" name="phone" class="form-control" placeholder="10 dígitos">
+                                    <input type="text" name="telefono" class="form-control" placeholder="10 dígitos"
+                                        value="{{ old('telefono') }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Código postal</label>
+                                    <input type="text" name="zip_code" class="form-control" placeholder="75700"
+                                        maxlength="5" inputmode="numeric" pattern="[0-9]{5}" value="{{ old('zip_code') }}"
+                                        id="zip_code_input" autocomplete="off">
+                                    <small class="text-muted">Debe contener 5 dígitos numéricos.</small>
+                                    <div id="sepomex-status" class="sepomex-feedback text-muted"></div>
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label">Calle y número</label>
-                                    <input type="text" name="calle_numero" class="form-control"
-                                        placeholder="Av. Reforma 123">
+                                    <label class="form-label">Colonia / Asentamiento </label>
+                                    <select class="form-select" name="sepomex_id" id="sepomex_id_select" disabled>
+                                        <option value="">Primero ingresa un código postal válido</option>
+                                    </select>
+                                    <small class="text-muted">Selecciona una opción para continuar.</small>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Colonia</label>
-                                    <input type="text" name="colonia" class="form-control" placeholder="Centro">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Municipio / Alcaldía</label>
-                                    <input type="text" name="municipio_alcaldia" class="form-control"
-                                        placeholder="Tehuacán">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Código postal</label>
-                                    <input type="text" name="codigo_postal" class="form-control" placeholder="75700">
+                                <div class="col-12">
+                                    <label class="form-label">Calle</label>
+                                    <input type="text" name="calle" class="form-control"
+                                        placeholder="Av. Reforma" value="{{ old('calle') }}">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Estado</label>
-                                    <input type="text" name="estado" class="form-control" placeholder="Puebla">
+                                    <label class="form-label">Número exterior (Opcional)</label>
+                                    <input type="text" name="numero_exterior" class="form-control" placeholder="123"
+                                        value="{{ old('numero_exterior') }}">
                                 </div>
                                 <div class="col-md-6">
+                                    <label class="form-label">Número interior (Opcional)</label>
+                                    <input type="text" name="numero_interior" class="form-control" placeholder="Depto 5"
+                                        value="{{ old('numero_interior') }}">
+                                </div>
+                                <div class="col-12">
                                     <label class="form-label">Referencias (Opcional)</label>
-                                    <input type="text" name="referencias" class="form-control"
+                                    <input type="text" name="referencias" class="form-control" value="{{ old('referencias') }}"
                                         placeholder="Entre calles, color de casa...">
                                 </div>
                             </div>
@@ -267,4 +287,200 @@
 
 
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addressSelect = document.getElementById('address_id');
+            const newAddressForm = document.getElementById('new-address-form');
+            const zipCodeInput = document.getElementById('zip_code_input');
+            const sepomexSelect = document.getElementById('sepomex_id_select');
+            const sepomexStatus = document.getElementById('sepomex-status');
+            const submitButton = document.querySelector('button[type="submit"]');
+            const sepomexSearchUrl = "{{ route('checkout.sepomex.search') }}";
+
+            if (!newAddressForm || !submitButton) {
+                return;
+            }
+
+            const requiredFieldNames = ['receptor_name', 'telefono', 'zip_code', 'calle', 'sepomex_id'];
+
+            let zipSearchController = null;
+
+            function sanitizeZip(value) {
+                return (value || '').replace(/\D/g, '').slice(0, 5);
+            }
+
+            function resetSepomexSelect(message) {
+                if (!sepomexSelect) {
+                    return;
+                }
+
+                sepomexSelect.innerHTML = '';
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = message || 'Sin resultados';
+                sepomexSelect.appendChild(option);
+                sepomexSelect.value = '';
+                sepomexSelect.disabled = true;
+            }
+
+            function setStatus(message, type) {
+                if (!sepomexStatus) {
+                    return;
+                }
+
+                sepomexStatus.classList.remove('text-muted', 'text-danger', 'text-success');
+                sepomexStatus.classList.add(type || 'text-muted');
+                sepomexStatus.textContent = message || '';
+            }
+
+            function updateSubmitState() {
+                const isNewAddress = !addressSelect || addressSelect.value === 'new';
+
+                if (!isNewAddress) {
+                    submitButton.disabled = false;
+                    return;
+                }
+
+                const zipIsValid = zipCodeInput ? /^\d{5}$/.test(zipCodeInput.value) : false;
+                const sepomexSelected = sepomexSelect ? sepomexSelect.value !== '' : false;
+                submitButton.disabled = !(zipIsValid && sepomexSelected);
+            }
+
+            function populateSepomexOptions(results) {
+                if (!sepomexSelect) {
+                    return;
+                }
+
+                sepomexSelect.innerHTML = '';
+
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = '-- Selecciona colonia/asentamiento --';
+                sepomexSelect.appendChild(placeholder);
+
+                results.forEach(function(item) {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+
+                    const cityPart = item.city ? ', ' + item.city : '';
+                    option.textContent = item.settlement + ' (' + item.settlement_type + ') - ' + item.municipality + ', ' + item.state + cityPart;
+
+                    sepomexSelect.appendChild(option);
+                });
+
+                sepomexSelect.disabled = false;
+
+                const oldSepomexId = "{{ old('sepomex_id') }}";
+                if (oldSepomexId) {
+                    sepomexSelect.value = oldSepomexId;
+                }
+            }
+
+            async function searchSepomexByZip(zipCode) {
+                if (!sepomexSelect) {
+                    return;
+                }
+
+                if (zipSearchController) {
+                    zipSearchController.abort();
+                }
+
+                zipSearchController = new AbortController();
+                setStatus('Buscando colonias para el CP ' + zipCode + '...', 'text-muted');
+                resetSepomexSelect('Buscando...');
+
+                try {
+                    const response = await fetch(sepomexSearchUrl + '?zip_code=' + zipCode, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        signal: zipSearchController.signal
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('No fue posible consultar SEPOMEX');
+                    }
+
+                    const payload = await response.json();
+                    const results = payload.results || [];
+
+                    if (!results.length) {
+                        resetSepomexSelect('No se encontraron colonias para ese CP');
+                        setStatus('No hay resultados para el código postal capturado.', 'text-danger');
+                        updateSubmitState();
+                        return;
+                    }
+
+                    populateSepomexOptions(results);
+                    setStatus('Selecciona la colonia/asentamiento correspondiente.', 'text-success');
+                    updateSubmitState();
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
+
+                    resetSepomexSelect('Error al consultar SEPOMEX');
+                    setStatus('Ocurrió un error al consultar SEPOMEX. Intenta de nuevo.', 'text-danger');
+                    updateSubmitState();
+                }
+            }
+
+            function toggleNewAddressForm() {
+                const isNewAddress = !addressSelect || addressSelect.value === 'new';
+                newAddressForm.style.display = isNewAddress ? 'block' : 'none';
+
+                requiredFieldNames.forEach(function(name) {
+                    const input = document.querySelector('[name="' + name + '"]');
+                    if (input) {
+                        input.required = isNewAddress;
+                    }
+                });
+
+                if (!isNewAddress) {
+                    setStatus('', 'text-muted');
+                }
+
+                updateSubmitState();
+            }
+
+            if (zipCodeInput) {
+                zipCodeInput.addEventListener('input', function(event) {
+                    const normalized = sanitizeZip(event.target.value);
+                    event.target.value = normalized;
+
+                    resetSepomexSelect('Ingresa los 5 dígitos para buscar');
+
+                    if (normalized.length < 5) {
+                        setStatus('Captura 5 dígitos para buscar colonias.', 'text-muted');
+                        updateSubmitState();
+                        return;
+                    }
+
+                    searchSepomexByZip(normalized);
+                });
+            }
+
+            if (sepomexSelect) {
+                sepomexSelect.addEventListener('change', updateSubmitState);
+            }
+
+            if (addressSelect) {
+                addressSelect.addEventListener('change', toggleNewAddressForm);
+            }
+
+            const oldZipCode = "{{ old('zip_code') }}";
+            if (zipCodeInput && /^\d{5}$/.test(oldZipCode)) {
+                zipCodeInput.value = oldZipCode;
+                searchSepomexByZip(oldZipCode);
+            } else {
+                resetSepomexSelect('Ingresa los 5 dígitos para buscar');
+                setStatus('Captura 5 dígitos para buscar colonias.', 'text-muted');
+            }
+
+            toggleNewAddressForm();
+        });
+    </script>
 @endsection
