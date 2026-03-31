@@ -42,10 +42,18 @@ class CartController extends Controller
         $cart = session()->get('cart', []);
 
         if (isset($cart[$id])) {
-            $quantity = (int) $request->cantidad;
+            // ACEPTAMOS EL CAMBIO: Usamos 'quantity' como lo configuró tu compañera en la vista
+            $quantity = (int) $request->input('quantity');
+            
+            // MANTENEMOS NUESTRA SEGURIDAD: Verificamos contra la BD real de CT
+            $product = Product::find($id);
+            $stockData = is_array($product->existencia) ? $product->existencia : json_decode($product->existencia, true);
+            $stockDisponible = $stockData['total'] ?? 0;
 
             if ($quantity <= 0) {
                 unset($cart[$id]);
+            } elseif ($quantity > $stockDisponible) {
+                return redirect()->route('carrito')->with('error', "Solo tenemos {$stockDisponible} unidades de {$product->nombre} en existencia.");
             } else {
                 $cart[$id]['quantity'] = $quantity;
             }
@@ -53,7 +61,8 @@ class CartController extends Controller
             session()->put('cart', $cart);
         }
 
-        return redirect()->route('carrito');
+        // Regresamos con el mensaje de éxito
+        return redirect()->route('carrito')->with('success', 'Cantidad actualizada');
     }
 
     public function remove($id)
