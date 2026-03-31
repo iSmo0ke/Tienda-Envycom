@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use App\Http\Requests\ProductSearchRequest;
 
 class ProductController extends Controller
 {
@@ -14,24 +15,26 @@ class ProductController extends Controller
         return view('products.index', compact('products'));
     }
 
-    public function buscar(Request $request)
+    public function buscar(ProductSearchRequest $request)
     {
-        $search = $request->search;
+        $query = $request->only(['q'])['q'];
 
-        $products = Product::where('activo', true)
-            ->where(function ($query) use ($search) {
-                $query->where('nombre', 'like', '%' . $search . '%')
-                      ->orWhere('descripcion_corta', 'like', '%' . $search . '%')
-                      ->orWhere('marca', 'like', '%' . $search . '%');
+        $productos = Product::where('activo', true)
+            ->where(function ($q) use ($query) {
+                $q->where('nombre', 'LIKE', "%{$query}%")
+                    ->orWhere('numParte', 'LIKE', "%{$query}%")
+                    ->orWhere('marca', 'LIKE', "%{$query}%");
             })
-            ->paginate(12);
+            ->paginate(20);
 
-        return view('products.resultados', compact('products', 'search'));
+        return view('products.resultados', compact('productos', 'query'));
     }
 
     public function show($id)
     {
-        $product = Product::findOrFail($id);
+        // Buscamos el producto pero aseguramos que esté activo para el cliente
+        $product = Product::where('activo', true)->findOrFail($id);
+
         return view('products.show', compact('product'));
     }
 }

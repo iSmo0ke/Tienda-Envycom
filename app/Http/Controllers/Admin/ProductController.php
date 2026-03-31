@@ -7,6 +7,8 @@ use App\Http\Requests\Admin\StoreProductRequest;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\Admin\UpdateProductRequest;
+use App\Http\Requests\Admin\DestroyProductRequest;
 
 class ProductController extends Controller
 {
@@ -26,10 +28,10 @@ class ProductController extends Controller
         return view('admin.products.create');
     }
 
-    public function store(StoreProductRequest $request)
+    public function store(UpdateProductRequest $request)
     {
-       
-        $safeData = $request->only([
+        // MAP: Solo permitimos campos del formulario
+        $data = $request->only([
             'nombre',
             'numParte',
             'precio',
@@ -39,15 +41,13 @@ class ProductController extends Controller
             'descripcion_corta'
         ]);
 
-        // forzamos valores que no vienen del formulario por seguridad
-        $product = Product::create(array_merge($safeData, [
+        Product::create(array_merge($data, [
             'source' => 'LOCAL',
             'activo' => $request->has('activo'),
-            'existencia' => json_encode(['total' => 0]), // inicializar stock
+            'existencia' => json_encode(['total' => 0]),
         ]));
 
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Producto creado exitosamente.');
+        return redirect()->route('admin.products.index')->with('success', 'Producto creado.');
     }
 
     public function edit(Product $product)
@@ -55,57 +55,28 @@ class ProductController extends Controller
         return view('admin.products.edit', compact('product'));
     }
 
-    public function update(Request $request, Product $product)
+    public function update(UpdateProductRequest $request, Product $product)
     {
-        // 1. Validamos los datos de entrada
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|max:255',
-            'brand' => 'nullable|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'short_description' => 'nullable|string',
-            'stock' => 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Validación de imagen
-        ]);
+        // MAP: Impedimos que cambien el 'source' o 'numParte' si es de CT
+        $data = $request->only(['nombre', 'precio', 'marca', 'categoria', 'descripcion_corta']);
 
-        // 2. Manejo de la imagen
-        // Conservamos la ruta de la imagen actual por defecto
-        $imagePath = $product->imagen;
+        $data['activo'] = $request->has('activo');
 
-        if ($request->hasFile('image')) {
-            // Si el producto ya tenía una imagen local, la borramos del disco para ahorrar espacio
-            if ($product->imagen && !str_starts_with($product->imagen, 'http')) {
-                Storage::disk('public')->delete($product->imagen);
-            }
+        $product->update($data);
 
-            // Subimos la nueva imagen
-            $imagePath = $request->file('image')->store('products', 'public');
-        }
-
-        // 3. Recuperamos el arreglo JSON de existencia y lo modificamos
-        $existencia = $product->existencia ?? [];
-        $existencia['local'] = $validatedData['stock'];
-
-        // 4. Actualizamos el producto en la base de datos
-        $product->update([
-            'nombre' => $validatedData['name'],
-            'numParte' => $validatedData['sku'],
-            'marca' => $validatedData['brand'],
-            'precio' => $validatedData['price'],
-            'descripcion_corta' => $validatedData['short_description'],
-            'existencia' => $existencia,
-            'imagen' => $imagePath,
-        ]);
-
-        // 5. Redireccionamos con mensaje de éxito
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Producto actualizado exitosamente.');
+        return redirect()->route('admin.products.index')->with('success', 'Producto actualizado.');
     }
 
-    public function destroy(Product $product)
+    public function destroy(DestroyProductRequest $request, Product $product)
     {
+        // Verificación de seguridad adicional: No permitir borrar productos de CT desde el panel manual
+        if ($product->source === 'CT') {
+            return back()->with('error', 'No puedes eliminar productos sincronizados de CT. Desactívalos desde el catálogo.');
+        }
+
         $product->delete();
+
         return redirect()->route('admin.products.index')
-            ->with('success', 'Producto eliminado exitosamente.');
+            ->with('success', 'Producto eliminado correctamente.');
     }
 }
