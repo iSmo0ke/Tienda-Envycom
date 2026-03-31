@@ -11,6 +11,14 @@ return [
     'rules' => [
         'min_products'  => 4,    // Debe tener al menos 4 productos (más de 3)
         'require_stock' => true, // Debe tener stock mayor a 0 en la suma total
+        //Filtro por SKU
+        'excluded_skus' => [
+            'BM4G5AT#ABM','BT3E5AT#ABM','BP0L4AT#ABM','B0CP3LA','JMF3D','0F6GX','0Y8RM','EP20AN2 N100 4G/128G W11P',
+            '90NX08X1-M004B0','90NX08W1-M003R0','90NX03E1-M00WM0','CZ1104CM2A-NS0084','90NX0781-M009C0','90NX06J2-M002E0',
+            '90NX07P2-M00MP0','90NR0MZ6-M001H0','90NR0BV7-M00NT0','90NR0N06-M00570','90NR0N06-M00580','90NR0KQ1-M00130',
+            '90NR0KV1-M005X0','90NR0NB1-M00490','0NR0KW8-M002Z0','90NR0JY1-M000U0','90NR0LT1-M000R0','90NR0LD1-M001R0',
+            '90NR0LG1-M00BM0','90NR0LD1-M007V0','9L8Y7LA#ABM'
+        ],
     ],
 
     /*
@@ -32,6 +40,9 @@ return [
         'Ovaltech', 'Pacific Soft', 'Panasonic', 'Pcm', 'Pny', 'Poly', 'Prolicom', 'Qian', 
         'Sabo', 'Sandisk', 'Seagate', 'Silimex', 'Star Micronics', 'Startech.com', 'Synology', 
         'Toshiba', 'Vankyo', 'Verbatim', 'Western Digital', 'Wilson Jones',
+
+        //
+        'Apple', 'Asus', 'Asus Business', 'Dell', 'Hp', 'Lenovo', 'Samsung', 'Xerox',
 
         //?SYSCOM
         'Allied Telesis', 'Alter', 'Anviz', 'Apc', 'Belden', 'Bolide', 
@@ -71,56 +82,4 @@ return [
         'Up', 'Urban Balance', 'Urovo', 'Valve', 'Vangogh', 'Vorago', 'Vortred',
         'Xbox', 'Xiaomi', 'Xpg', 'Xzeal', 'Yaber', 'Yeyian', 'Yobekan'
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Marcas Condicionales (EXP)
-    |--------------------------------------------------------------------------
-    | Solo importar ciertos SKUs o Categorías de estas marcas.
-    */
-    'conditional' => [
-        'Apple' => [
-            'allowed_categories' => ['Computo', 'Tablets', 'Accesorios'], // Ejemplo
-            'allowed_skus' => [], 
-        ],
-        'Asus' => [
-            'allowed_categories' => [],
-            'allowed_skus' => [],
-        ],
-        'Asus Business' => [
-            'allowed_categories' => [],
-            'allowed_skus' => [],
-        ],
-        'Dell' => [
-            'allowed_categories' => [],
-            'allowed_skus' => [],
-        ],
-        'Hp' => [
-            'allowed_categories' => [],
-            'allowed_skus' => [],
-        ],
-        'Lenovo' => [
-            'allowed_categories' => [],
-            'allowed_skus' => [],
-        ],
-        'Samsung' => [
-            'allowed_categories' => ['Monitores'], // Ejemplo
-            'allowed_skus' => [],
-        ],
-        'Xerox' => [
-            'allowed_categories' => [],
-            'allowed_skus' => [],
-        ]
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Marcas en Evaluación / Pendientes (?)
-    |--------------------------------------------------------------------------
-    | Estas se ignoran por ahora. En el futuro, la API secundaria (Syscom)
-    | decidirá si entran o no.
-    */
-    'ignored' => [
-
-    ]
 ];

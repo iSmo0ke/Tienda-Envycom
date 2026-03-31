@@ -9,27 +9,26 @@ class CartController extends Controller
 {
     public function index()
     {
-        // CAMBIO: 'carrito' a 'cart'
         $cart = session()->get('cart', []);
-        return view('carrito', compact('cart')); // compact también cambia a 'cart'
+        return view('carrito', compact('cart'));
     }
 
     public function add($id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::where('activo', true)->findOrFail($id);
         $cart = session()->get('cart', []);
 
         if (isset($cart[$id])) {
-            $cart[$id]['quantity']++; // CAMBIO: 'cantidad' a 'quantity'
+            $cart[$id]['quantity']++;
         } else {
             $cart[$id] = [
                 'id' => $product->id,
-                'name' => $product->nombre, // CAMBIO: 'nombre' a 'name' (asumo que tu DB todavía tiene 'nombre', si no, cambia a $product->name)
-                'brand' => $product->marca, // CAMBIO: 'marca' a 'brand'
+                'name' => $product->nombre,
+                'brand' => $product->marca, 
                 'sku' => $product->sku ?? 'N/A',
-                'price' => $product->precio, // CAMBIO: 'precio' a 'price'
-                'quantity' => 1,            // CAMBIO: 'cantidad' a 'quantity'
-                'image' => $product->imagen ?? null, // CAMBIO: 'imagen' a 'image'
+                'price' => $product->precio,
+                'quantity' => 1,
+                'image' => $product->imagen ?? null,
             ];
         }
 
@@ -43,7 +42,7 @@ class CartController extends Controller
         $cart = session()->get('cart', []);
 
         if (isset($cart[$id])) {
-            $quantity = (int) $request->cantidad; // Si el name del input en HTML sigue siendo 'cantidad', déjalo así aquí
+            $quantity = (int) $request->cantidad;
 
             if ($quantity <= 0) {
                 unset($cart[$id]);

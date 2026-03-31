@@ -34,7 +34,7 @@ class SyncCTCatalog extends Command
 
         $filePath = storage_path('app/private/' . $localFileName);
 
-        // 1. Leer y decodificar el JSON (Aquí entra el código que ya teníamos)
+        // 1. Leer y decodificar el JSON
         $jsonContent = File::get($filePath);
         $productosCT = json_decode($jsonContent, true);
 
@@ -45,30 +45,30 @@ class SyncCTCatalog extends Command
 
         $this->info("📦 Se encontraron " . count($productosCT) . " productos en el JSON crudo.");
 
-        //Cargar la configuración de marcas
+        // 2. Cargar la configuración de marcas
         $config = config('ct_brands');
         $approvedBrands = array_map('strtolower', $config['approved']);
         $rejectedBrands = array_map('strtolower', $config['rejected']);
-        $conditionalBrands = array_change_key_case($config['conditional'], CASE_LOWER);
         
         $minProducts = $config['rules']['min_products'];
         $requireStock = $config['rules']['require_stock'];
+        $excludedSkus = $config['rules']['excluded_skus'] ?? [];
 
-        //Agrupar por marca para validar volumen y stock total
+        // 3. Agrupar por marca para validar volumen y stock total
         $productosPorMarca = collect($productosCT)->groupBy(function ($item) {
             return strtolower($item['marca'] ?? 'desconocida');
         });
 
         $productosAImportar = [];
-        $skusProcesados = []; // Para saber cuáles desactivar al final
+        $skusProcesados = [];
 
-        $this->info("Filtrando productos según reglas de negocio...");
+        $this->info("🔍 Filtrando productos según reglas de negocio...");
 
         foreach ($productosPorMarca as $marca => $productos) {
-            //Regla General: Menos de X productos, se ignora la marca completa
+            // Regla General: Menos de X productos, se ignora la marca completa
             if ($productos->count() < $minProducts) continue;
 
-            //Regla General: Suma de stock debe ser mayor a 0
+            // Regla General: Suma de stock debe ser mayor a 0
             if ($requireStock) {
                 $stockTotal = $productos->sum(function ($p) {
                     return (int) ($p['existencia'] ?? 0);
@@ -76,32 +76,25 @@ class SyncCTCatalog extends Command
                 if ($stockTotal <= 0) continue;
             }
 
-            //Si está en rechazadas, saltar
+            // Regla de Excel: Si está en rechazadas, saltar
             if (in_array($marca, $rejectedBrands)) continue;
 
-            //Si NO está en aprobadas y NO es condicional (?), saltar
-            if (!in_array($marca, $approvedBrands) && !array_key_exists($marca, $conditionalBrands)) continue;
+            // Regla de Excel: Si NO está en aprobadas, saltar
+            if (!in_array($marca, $approvedBrands)) continue;
 
-            //Iterar sobre los productos de las marcas que sí pasaron los filtros
+            // Iterar sobre los productos de las marcas que sí pasaron los filtros
             foreach ($productos as $prod) {
-                //Si es marca CONDICIONAL (EXP), aplicar filtros extra
-                if (array_key_exists($marca, $conditionalBrands)) {
-                    $condiciones = $conditionalBrands[$marca];
-                    $categoria = $prod['categoria'] ?? '';
-                    $sku = $prod['numParte'] ?? '';
+                
+                $numParte = $prod['numParte'] ?? 'N/A';
 
-                    $pasaCategoria = in_array($categoria, $condiciones['allowed_categories'] ?? []);
-                    $pasaSku = in_array($sku, $condiciones['allowed_skus'] ?? []);
-
-                    if (!$pasaCategoria && !$pasaSku) {
-                        continue; //No cumple condición de SKU o Categoría, lo saltamos
-                    }
+                // Si este SKU está en nuestra lista negra, lo saltamos y no se importa
+                if (in_array($numParte, $excludedSkus)) {
+                    continue; 
                 }
 
-                //Mapear los datos del JSON a las columnas de la BD
-                $numParte = $prod['numParte'] ?? 'N/A';
                 $skusProcesados[] = $numParte;
 
+                // Mapear los datos del JSON a las columnas de nuestra BD
                 $productosAImportar[] = [
                     'idProducto' => $prod['idProducto'] ?? null,
                     'numParte' => $numParte,
@@ -111,11 +104,10 @@ class SyncCTCatalog extends Command
                     'categoria' => $prod['categoria'] ?? null,
                     'descripcion_corta' => $prod['descripcion_corta'] ?? null,
                     'precio' => $prod['precio'] ?? 0,
-                    //Si viene en array, lo convertimos a JSON para el upsert masivo
                     'existencia' => isset($prod['existencia']) ? json_encode(['total' => $prod['existencia']]) : json_encode([]), 
                     'especificaciones' => isset($prod['especificaciones']) ? json_encode($prod['especificaciones']) : json_encode([]),
                     'activo' => true,
-                    'source' => 'CT', // Clave para diferenciar de los productos locales
+                    'source' => 'CT',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
