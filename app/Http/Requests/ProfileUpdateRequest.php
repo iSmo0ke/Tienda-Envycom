@@ -27,12 +27,4 @@ class ProfileUpdateRequest extends FormRequest
             ],
         ];
     }
-
-    public function messages(): array
-    {
-        return [
-            'email.unique' => 'El correo electrónico ya está en uso. Por favor, elige otro.',
-            'email.email' => 'El correo electrónico debe ser una dirección de correo válida.',
-        ];
-    }
 }
