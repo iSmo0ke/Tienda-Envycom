@@ -10,10 +10,13 @@ use App\Http\Controllers\CheckoutController;
 
 
 Route::get('/', function () {return view('welcome');});
-// routes/web.php
-Route::get('/dashboard', [ProfileController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+Route::get('/dashboard', function (Request $request) {
+
+    $pedidos = \App\Models\Order::where('user_id', $request->user()->id)
+                                ->orderBy('created_at', 'desc')
+                                ->get();
+                                
+    return view('dashboard', compact('pedidos'));})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/terminos-y-condiciones', function () {return view('legal.terminos');})->name('legal.terminos');
 Route::get('/aviso-de-privacidad', function () {return view('legal.privacidad');})->name('legal.privacidad');

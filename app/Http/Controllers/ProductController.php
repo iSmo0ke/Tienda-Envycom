@@ -17,17 +17,29 @@ class ProductController extends Controller
 
     public function buscar(ProductSearchRequest $request)
     {
-        $query = $request->only(['q'])['q'];
+        $search = $request->validated()['q'];
 
-        $productos = Product::where('activo', true)
-            ->where(function ($q) use ($query) {
-                $q->where('nombre', 'LIKE', "%{$query}%")
-                    ->orWhere('numParte', 'LIKE', "%{$query}%")
-                    ->orWhere('marca', 'LIKE', "%{$query}%");
-            })
+        if (empty($search)) {
+           return redirect()->route('products.index');
+    }
+
+        $products = Product::where('activo', true)
+           ->where(function ($query) use ($search) {
+            $query->where('nombre', 'like', "%{$search}%")
+               ->orWhere('numParte', 'like', "%{$search}%")
+                ->orWhere('marca', 'like', "%{$search}%")
+                ->orWhere('descripcion_corta', 'like', "%{$search}%");
+       })
             ->paginate(20);
 
+          $products->appends(['q' => $search]);
+
+          return view('products.resultados', compact('products', 'search'));
+
         return view('products.resultados', compact('productos', 'query'));
+        $products->appends(['search' => $search]);
+
+        return view('products.resultados', compact('products', 'search'));
     }
 
     public function show($id)

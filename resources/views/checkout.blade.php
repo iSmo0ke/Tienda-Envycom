@@ -164,7 +164,7 @@
                         <div id="new-address-form" style="{{ $direcciones->count() > 0 ? 'display: none;' : '' }}">
                             <h5 class="form-label mb-3">Ingresar nueva dirección</h5>
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                 <div class="col-md-6">
                                     <label class="form-label">Alias (Opcional)</label>
                                     <input type="text" name="alias" class="form-control"
                                         placeholder="Casa, Oficina..." value="{{ old('alias') }}">
@@ -211,7 +211,7 @@
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Referencias (Opcional)</label>
-                                    <input type="text" name="referencias" class="form-control" value="{{ old('referencias') }}"
+                                     <input type="text" name="referencias" class="form-control" value="{{ old('referencias') }}"
                                         placeholder="Entre calles, color de casa...">
                                 </div>
                             </div>
@@ -284,8 +284,6 @@
                 </div>
             </div>
         </form>
-
-
     </div>
 
     <script>

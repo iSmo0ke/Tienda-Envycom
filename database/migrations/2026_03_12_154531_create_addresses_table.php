@@ -8,7 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-
         Schema::create('postal_codes', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('zip_code'); // d_codigo
@@ -25,16 +24,15 @@ return new class extends Migration
             $table->index('municipality');
         });
 
-
         Schema::create('addresses', function (Blueprint $table) {
             $table->id()->primary();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignUuid('sepomex_id')->constrained('postal_codes');
             $table->string('calle');
-            $table->string('alias')->nullable(); // Ej: Casa, Oficina
+            $table->string('alias')->nullable();
             $table->boolean('is_default')->default(false);
             $table->string('numero_exterior')->nullable();
-            $table->string('receptor_name'); // Quién recibe
+            $table->string('receptor_name');
             $table->string('numero_interior')->nullable();
             $table->text('referencias')->nullable();
             $table->string('telefono',12);
