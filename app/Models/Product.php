@@ -14,7 +14,7 @@ class Product extends Model
 
     // Esto convierte los JSON de la base de datos en arreglos de PHP automáticamente
     protected $casts = [
-        'existencia' => 'array',
+        //'existencia' => 'array',
         'especificaciones' => 'array',
         'promociones' => 'array',
         'activo' => 'boolean',
