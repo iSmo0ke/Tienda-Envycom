@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderConfirmed;
@@ -89,6 +90,25 @@ class CheckoutController extends Controller
 
         if (!session()->has('checkout_address')) {
             return redirect()->route('checkout.index')->with('error', 'Por favor selecciona una dirección de envío.');
+        }
+
+        $productosRemovidos = false;
+
+        foreach ($cart as $id => $item) {
+            // Buscamos el producto real en la base de datos
+            $productoReal = Product::find($id);
+
+            // Si el producto ya no existe o fue desactivado (activo = 0)
+            if (!$productoReal || !$productoReal->activo) {
+                unset($cart[$id]); // Lo sacamos del carrito
+                $productosRemovidos = true;
+            }
+        }
+
+        // Si quitamos algo, actualizamos la sesión y regresamos al cliente al carrito con un aviso
+        if ($productosRemovidos) {
+            session()->put('cart', $cart);
+            return redirect()->route('carrito')->with('error', 'Lo sentimos, algunos productos de tu carrito se acaban de agotar y fueron removidos. Por favor, revisa tu pedido.');
         }
 
         $subtotal = 0;
