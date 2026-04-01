@@ -226,13 +226,13 @@ $total = $subtotal + $envio;
                             <div class="brand">{{ $item['brand'] ?? 'MARCA' }}</div>
                             <div class="product-name">{{ $item['name'] }}</div>
                             <div class="small text-secondary">
-                                SKU: {{ $item['sku'] ?? 'N/A' }}
+                                SKU: {{ $item['numParte'] ?? 'N/A' }}
                             </div>
                         </div>
 
                         <div class="col-md-2 col-6">
                             <label class="form-label small text-secondary mb-1">Cantidad</label>
-                            <form action="{{ route('carrito.update', $id) }}" method="POST">
+                            <form action="{{ route('carrito.update', $item['id']) }}" method="POST">
                                 @csrf
                                 <div class="flex items-center">
                                     <input

@@ -4,13 +4,28 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Http\Requests\CartUpdateRequest;
 
 class CartController extends Controller
 {
     public function index()
     {
         $cart = session()->get('cart', []);
-        return view('carrito', compact('cart'));
+
+        // Calcular el subtotal
+        $subtotal = 0;
+        foreach ($cart as $item) {
+            $subtotal += $item['price'] * $item['quantity'];
+        }
+
+        // Definir el costo de envío (150 o gratis si quieres poner una promoción después)
+        $envio = 150.00;
+        
+        // Calcular el total
+        $total = $subtotal + $envio;
+
+        // Pasar TODAS las variables a la vista
+        return view('carrito', compact('cart', 'subtotal', 'envio', 'total'));
     }
 
     public function add($id)
@@ -25,7 +40,7 @@ class CartController extends Controller
                 'id' => $product->id,
                 'name' => $product->nombre,
                 'brand' => $product->marca, 
-                'sku' => $product->sku ?? 'N/A',
+                'numParte' => $product->numparte ?? 'N/A',
                 'price' => $product->precio,
                 'quantity' => 1,
                 'image' => $product->imagen ?? null,
@@ -37,12 +52,12 @@ class CartController extends Controller
         return redirect()->back()->with('success', 'Producto agregado al carrito');
     }
 
-    public function update(Request $request, $id)
+    public function update(CartUpdateRequest $request, $id)
     {
         $cart = session()->get('cart', []);
 
         if (isset($cart[$id])) {
-            // ACEPTAMOS EL CAMBIO: Usamos 'quantity' como lo configuró tu compañera en la vista
+            // Como ya pasó por el CartUpdateRequest, sabemos seguro que es un número entre 1 y 100
             $quantity = (int) $request->input('quantity');
             
             // MANTENEMOS NUESTRA SEGURIDAD: Verificamos contra la BD real de CT
@@ -50,9 +65,8 @@ class CartController extends Controller
             $stockData = is_array($product->existencia) ? $product->existencia : json_decode($product->existencia, true);
             $stockDisponible = $stockData['total'] ?? 0;
 
-            if ($quantity <= 0) {
-                unset($cart[$id]);
-            } elseif ($quantity > $stockDisponible) {
+            // Verificamos si nos está pidiendo más de lo que hay en CT
+            if ($quantity > $stockDisponible) {
                 return redirect()->route('carrito')->with('error', "Solo tenemos {$stockDisponible} unidades de {$product->nombre} en existencia.");
             } else {
                 $cart[$id]['quantity'] = $quantity;
@@ -61,7 +75,6 @@ class CartController extends Controller
             session()->put('cart', $cart);
         }
 
-        // Regresamos con el mensaje de éxito
         return redirect()->route('carrito')->with('success', 'Cantidad actualizada');
     }
 
