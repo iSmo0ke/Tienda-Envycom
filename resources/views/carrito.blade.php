@@ -198,6 +198,13 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="alert alert-danger rounded-4 shadow-sm border-0" style="background-color: #f8d7da; color: #842029;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                {{ session('error') }}
+            </div>
+        @endif
+
         <div class="row g-4">
             <div class="col-lg-8">
                 @if (empty($cart) || count($cart) === 0)

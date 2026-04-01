@@ -10,11 +10,9 @@ use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
-<<<<<<< Updated upstream
 
-=======
 use App\Exceptions\StockInsuficienteException;
->>>>>>> Stashed changes
+
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderConfirmed;
 use Illuminate\Support\Facades\Http;
@@ -74,7 +72,6 @@ class CheckoutController extends Controller
         $user = Auth::user();
         $direccionSnapshot = '';
 
-<<<<<<< Updated upstream
         if ($request->address_id === 'new') {
 
             $validated = $request->validate([
@@ -193,179 +190,141 @@ class CheckoutController extends Controller
     }
 
     public function process(Request $request)
-    {
-        $request->validate([
-            'token_id' => 'required',
-            'device_session_id' => 'required'
-        ]);
-        $request->validate(['token_id' => 'required']);
+{
+    // 1. Validaciones de Input de Openpay
+    $request->validate([
+        'token_id' => 'required',
+        'device_session_id' => 'required'
+    ]);
 
-        $cart = session()->get('cart', []);
-        if (empty($cart)) {
-            return redirect()->route('products.index');
+    $cart = session()->get('cart', []);
+    if (empty($cart)) {
+        return redirect()->route('products.index')->with('error', 'Tu carrito está vacío.');
+    }
+
+    $user = Auth::user();
+
+    // 2. ESCUDO DE SEGURIDAD (Validación PRE-PAGO)
+    foreach ($cart as $item) {
+        $producto = Product::find($item['id']);
+        
+        // A) Validar Existencia del Producto
+        if (!$producto || !$producto->activo) {
+            return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' ya no está disponible.");
         }
 
-        $subtotal = 0;
-        foreach ($cart as $item) {
-            $subtotal += $item['price'] * $item['quantity'];
-        }
-        $costoEnvio = 150.00;
-        $total = $subtotal + $costoEnvio;
-
-        $user = Auth::user();
-
-        try {
-            $response = Http::withBasicAuth(config('services.openpay.private_key'), '')
-                ->post('https://sandbox-api.openpay.mx/v1/' . config('services.openpay.merchant_id') . '/charges', [
-                    'method' => 'card',
-                    'source_id' => $request->token_id,
-                    'device_session_id' => $request->device_session_id,
-                    'amount' => (float) $total,
-                    'currency' => 'MXN',
-                    'description' => 'Compra en Tienda ENVYCOM',
-                    'customer' => [
-                        'name' => $user->name,
-                        'email' => $user->email,
-                    ]
-=======
-        foreach ($carrito as $item) {
-            $producto = Product::find($item['id']);
-            $stockData = json_decode($producto->existencia, true);
-            $stockReal = is_array($stockData) ? array_sum($stockData) : (int)$stockData;
-            if (!$producto || (int)$stockReal < (int)$item['cantidad']) {
-                throw new StockInsuficienteException();
-            }
-
-            if ((float)$producto->precio !== (float)$item['precio']) {
-                Log::alert("INTENTO DE FRAUDE: Usuario ID {$user->id} intentó alterar precio. Producto: {$producto->nombre}.");
-                return redirect()->route('carrito.index')->with('error', 'Los precios de algunos productos han cambiado. Por favor, verifica tu carrito.');
-            }
-        }
-
-        // Iniciamos transacción para evitar registros huérfanos si algo falla
-        DB::beginTransaction();
-
-        try {
-            // 3. Procesar la dirección y generar el Snapshot de texto
-            $direccionSnapshot = '';
-
-            if ($request->address_id === 'new') {
-                $receptiorLimpio = strip_tags($request->receptor_name ?? $user->name);
-                $calleNumeroLimpio = strip_tags($request->calle_numero);
-                $coloniaLimpio = strip_tags($request->colonia);
-                $refsLimpio = strip_tags($request->referencias);
-
-                // Guardar nueva dirección en la tabla addresses
-                $nuevaDireccion = Address::create([
-                    'user_id' => $user->id,
-                    'receptor_name' => $request->receptor_name ?? $user->name,
-                    'phone' => $request->phone,
-                    'calle_numero' => $request->calle_numero,
-                    'colonia' => $request->colonia,
-                    'municipio_alcaldia' => $request->municipio_alcaldia,
-                    'estado' => $request->estado,
-                    'codigo_postal' => $request->codigo_postal,
-                    'referencias' => $request->referencias,
-                    'is_default' => Address::where('user_id', $user->id)->count() === 0 ? true : false,
->>>>>>> Stashed changes
-                ]);
-
-            if ($response->failed()) {
-                $error = $response->json();
-                $mensaje = $error['description'] ?? 'El banco rechazó la transacción.';
-                return redirect()->route('checkout.payment')->with('error', 'Pago declinado: ' . $mensaje);
-            }
-
-            $charge = $response->json();
-
-            DB::beginTransaction();
-
-            $direccionSnapshot = session()->get('checkout_address', 'Dirección no registrada');
-
-            $ultimoPedido = Order::latest('id')->first();
-            $siguienteId = $ultimoPedido ? $ultimoPedido->id + 1 : 1;
-            $orderNumber = 'ENV-' . date('Y') . '-' . str_pad($siguienteId, 4, '0', STR_PAD_LEFT);
-
-            $order = Order::create([
-                'user_id' => $user->id,
-                'order_number' => $orderNumber,
-                'status' => 'en_proceso',
-                'subtotal' => $subtotal,
-                'shipping_cost' => $costoEnvio,
-                'total' => $total,
-                'shipping_address' => $direccionSnapshot,
-                'payment_method' => 'openpay_card',
-                'payment_id' => $charge['id'],
-            ]);
-
-            foreach ($cart as $item) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item['id'],
-                    'quantity' => $item['quantity'],
-                    'price' => $item['price'],
-                ]);
-
-                $p = Product::find($item['id']);
-
-                $producto = Product::find($item['id']);
-                $stockData = json_decode($producto->existencia, true);
-                $stockActual = is_array($stockData) ? array_sum($stockData) : (int)$stockData;
-                $nuevaExistencia = (int)$stockActual - (int)$item['cantidad'];
-                $producto->update(['existencia' => $nuevaExistencia]);
-            }
-
-            DB::commit();
-
-            try {
-                Mail::to($user->email)->send(new OrderConfirmed($order));
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Fallo correo: ' . $e->getMessage());
-            }
-
-            session()->forget(['cart', 'checkout_address']);
-
-<<<<<<< Updated upstream
-            return redirect()->route('pedido.confirmado')->with('success', '¡Pago exitoso! Tu folio es: ' . $orderNumber);
-=======
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return $this->successResponse([
-                    'order_number' => $orderNumber,
-                    'total' => $total,
-                ], '¡Pedido creado con éxito!', 201);
-            }
-
-            // 9. Mandamos al usuario a la página de éxito
-            return redirect()->route('pedido.confirmado')->with('success', '¡Pedido creado con éxito! Tu folio es: ' . $orderNumber);
->>>>>>> Stashed changes
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-<<<<<<< Updated upstream
-            return redirect()->route('checkout.payment')->with('error', 'Error interno: ' . $e->getMessage());
-=======
-            Log::critical("FALLO DE INTEGRIDAD EN DB: " . $e->getMessage(), ['user_id' => $user->id]);
-            return redirect()->back()->with('error', 'Error de integridad de datos. La operación ha sido bloqueada por seguridad.');
-
-                if ($request->expectsJson() || $request->is('api/*')) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Ocurrió un error al procesar el pedido: ' . $e->getMessage(),
-                        'code' => 500
-                    ], 500);
-                }
-                
-            return redirect()->back()->with('error', 'Ocurrió un error al procesar el pedido: ' . $e->getMessage());
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error general en Checkout: ' . $e->getMessage());
+        // B) Validar Precio (Anti-Fraude)
+        if ((float)$producto->precio !== (float)$item['price']) {
+            // Sincronizamos el precio en la sesión para que el usuario vea el cambio al volver
+            $cart[$item['id']]['price'] = $producto->precio;
+            session()->put('cart', $cart);
             
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-            }
-                
-            return redirect()->back()->with('error', 'Ocurrió un problema al procesar el pedido: ' . $e->getMessage());
->>>>>>> Stashed changes
+            Log::alert("CAMBIO DE PRECIO DETECTADO: Usuario ID {$user->id} intentó pagar precio viejo.");
+            return redirect()->route('carrito')->with('error', "Los precios de algunos productos han cambiado. Por favor, verifica tu total.");
+        }
+
+        // C) Validar Stock (Manejo de JSON o Entero)
+        $stockData = json_decode($producto->existencia, true);
+        $stockReal = is_array($stockData) ? array_sum($stockData) : (int)$producto->existencia;
+
+        if ($stockReal < (int)$item['quantity']) {
+            Log::warning("STOCK INSUFICIENTE: Usuario ID {$user->id} para el producto {$producto->nombre}.");
+            return redirect()->route('carrito')->with('error', "Lo sentimos, el producto '{$producto->nombre}' ya no tiene stock suficiente.");
         }
     }
+
+    // 3. Cálculos de Montos
+    $subtotal = 0;
+    foreach ($cart as $item) { 
+        $subtotal += $item['price'] * $item['quantity']; 
+    }
+    $costoEnvio = 150.00;
+    $total = $subtotal + $costoEnvio;
+
+    // 4. EJECUCIÓN DEL COBRO (Openpay)
+    try {
+        $response = Http::withBasicAuth(config('services.openpay.private_key'), '')
+            ->post('https://sandbox-api.openpay.mx/v1/' . config('services.openpay.merchant_id') . '/charges', [
+                'method' => 'card',
+                'source_id' => $request->token_id,
+                'device_session_id' => $request->device_session_id,
+                'amount' => (float) $total,
+                'currency' => 'MXN',
+                'description' => 'Compra en Tienda ENVYCOM',
+                'customer' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ]
+            ]);
+
+        if ($response->failed()) {
+            $error = $response->json();
+            $mensaje = $error['description'] ?? 'El banco rechazó la transacción.';
+            return redirect()->route('checkout.payment')->with('error', 'Pago declinado: ' . $mensaje);
+        }
+
+        $charge = $response->json();
+
+        // 5. REGISTRO DE ORDEN (Transacción Atómica)
+        DB::beginTransaction();
+
+        $direccionSnapshot = session()->get('checkout_address', 'Dirección no registrada');
+        $ultimoPedido = Order::latest('id')->first();
+        $siguienteId = $ultimoPedido ? $ultimoPedido->id + 1 : 1;
+        $orderNumber = 'ENV-' . date('Y') . '-' . str_pad($siguienteId, 4, '0', STR_PAD_LEFT);
+
+        $order = Order::create([
+            'user_id' => $user->id,
+            'order_number' => $orderNumber,
+            'status' => 'en_proceso',
+            'subtotal' => $subtotal,
+            'shipping_cost' => $costoEnvio,
+            'total' => $total,
+            'shipping_address' => $direccionSnapshot,
+            'payment_method' => 'openpay_card',
+            'payment_id' => $charge['id'],
+        ]);
+
+        foreach ($cart as $item) {
+            OrderItem::create([
+                'order_id' => $order->id,
+                'product_id' => $item['id'],
+                'quantity' => $item['quantity'],
+                'price' => $item['price'],
+            ]);
+
+            // ACTUALIZACIÓN DE STOCK (Respetando JSON o Int)
+            $p = Product::find($item['id']);
+            $actualStock = json_decode($p->existencia, true);
+            
+            if (is_array($actualStock)) {
+                // Restamos de la primera bodega que tenga stock (llave del JSON)
+                $key = array_key_first($actualStock);
+                $actualStock[$key] -= $item['quantity'];
+                $p->existencia = json_encode($actualStock);
+            } else {
+                $p->existencia = (int)$p->existencia - $item['quantity'];
+            }
+            $p->save();
+        }
+
+        DB::commit();
+
+        // 6. NOTIFICACIÓN Y LIMPIEZA
+        try {
+            Mail::to($user->email)->send(new OrderConfirmed($order));
+        } catch (\Exception $e) {
+            Log::error('Fallo envío de correo: ' . $e->getMessage());
+        }
+
+        session()->forget(['cart', 'checkout_address']);
+
+        return redirect()->route('pedido.confirmado')->with('success', '¡Pago exitoso! Folio: ' . $orderNumber);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::critical("ERROR CRÍTICO POST-PAGO: " . $e->getMessage());
+        return redirect()->route('products.index')->with('error', 'Hubo un problema al registrar tu pedido, pero el pago se realizó. ID Pago: ' . ($charge['id'] ?? 'N/A'));
+    }
+}
 }
