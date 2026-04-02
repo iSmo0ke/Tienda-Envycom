@@ -6,8 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use App\Http\Requests\Admin\UpdateProductRequest;
-use App\Http\Requests\Admin\DestroyProductRequest;
 
 class ProductController extends Controller
 {
@@ -69,44 +67,56 @@ public function store(Request $request)
         return view('admin.products.edit', compact('product'));
     }
 
-    public function update(UpdateProductRequest $request, Product $product)
-  {
-    $validatedData = $request->validated();
-
-    // Imagen actual
-    $imagePath = $product->imagen;
-
-    if ($request->hasFile('image')) {
-        if ($product->imagen && !str_starts_with($product->imagen, 'http')) {
-            Storage::disk('public')->delete($product->imagen);
-        }
-
-        $imagePath = $request->file('image')->store('products', 'public');
-      }
-
-    $product->update([
-        'nombre' => $validatedData['name'],
-        'numParte' => $validatedData['sku'],
-        'marca' => $validatedData['brand'],
-        'precio' => $validatedData['price'],
-        'descripcion_corta' => $validatedData['short_description'],
-        'existencia' => ['local' => $validatedData['stock']],
-        'imagen' => $imagePath,
-    ]);
-
-    return redirect()->route('admin.products.index')
-                     ->with('success', 'Producto actualizado exitosamente.');
-  }
-
-    public function destroy(DestroyProductRequest $request, Product $product)
+    public function update(Request $request, Product $product)
     {
-        // Verificación de seguridad adicional: No permitir borrar productos de CT desde el panel manual
-        if ($product->source === 'CT') {
-            return back()->with('error', 'No puedes eliminar productos sincronizados de CT. Desactívalos desde el catálogo.');
+        // 1. Validamos los datos de entrada
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'sku' => 'nullable|string|max:255',
+            'brand' => 'nullable|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'short_description' => 'nullable|string',
+            'stock' => 'required|integer|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Validación de imagen
+        ]);
+
+        // 2. Manejo de la imagen
+        // Conservamos la ruta de la imagen actual por defecto
+        $imagePath = $product->imagen; 
+
+        if ($request->hasFile('image')) {
+            // Si el producto ya tenía una imagen local, la borramos del disco para ahorrar espacio
+            if ($product->imagen && !str_starts_with($product->imagen, 'http')) {
+                Storage::disk('public')->delete($product->imagen);
+            }
+            
+            // Subimos la nueva imagen
+            $imagePath = $request->file('image')->store('products', 'public');
         }
 
-        $product->delete();
+        // 3. Recuperamos el arreglo JSON de existencia y lo modificamos
+        $existencia = $product->existencia ?? [];
+        $existencia['local'] = $validatedData['stock'];
 
+        // 4. Actualizamos el producto en la base de datos
+        $product->update([
+            'nombre' => $validatedData['name'],
+            'numParte' => $validatedData['sku'],
+            'marca' => $validatedData['brand'],
+            'precio' => $validatedData['price'],
+            'descripcion_corta' => $validatedData['short_description'],
+            'existencia' => $existencia,
+            'imagen' => $imagePath,
+        ]);
+
+        // 5. Redireccionamos con mensaje de éxito
+        return redirect()->route('admin.products.index')
+                         ->with('success', 'Producto actualizado exitosamente.');
+    }
+
+    public function destroy(Product $product)
+    {
+        $product->delete();
         return redirect()->route('admin.products.index')
                          ->with('success', 'Producto eliminado exitosamente.');
     }

@@ -155,110 +155,85 @@
     </style>
 
     <div class="container catalog-wrapper">
-    <h1 class="catalog-title">Catálogo de Productos</h1>
-    
-    {{-- ALERTA --}}
-    @if(session('success'))
-        <div class="alert alert-success rounded-4 shadow-sm mb-4 fade show" role="alert">
-            {{ session('success') }}
-        </div>
-    @endif
+        <h1 class="catalog-title">Catálogo de Productos</h1>
+        
+        @if(session('success'))
+            <div class="alert alert-success rounded-4 shadow-sm mb-4 fade show" role="alert">
+                {{ session('success') }}
+            </div>
+        @endif
 
-    @if ($products->count())
-        <div class="products-grid">
-            @foreach ($products as $product)
-                <div class="product-card d-flex flex-column">
-
-                    {{-- LINK GENERAL --}}
-                    <a href="{{ route('products.show', $product->id) }}" 
-                       class="product-link flex-grow-1"
-                       style="text-decoration: none; color: inherit; display: flex; flex-direction: column;">
-
-                        {{-- IMAGEN --}}
-                        <div class="product-image-wrap">
-                            <x-product-image 
-                                :product="$product" 
-                                class="img-fluid"
-                            />
-                        </div>
-
-                        {{-- CONTENIDO --}}
-                        <div class="product-body">
-
-                            <div class="product-brand">
-                                {{ $product->marca ?? 'Sin marca' }}
+        @if ($products->count())
+            <div class="products-grid">
+                @foreach ($products as $product)
+                    <div class="product-card">
+                        
+                        {{-- Todo el contenido clickeable (Imagen + Textos) envuelto en un solo enlace --}}
+                        <a href="{{ route('products.show', $product->id) }}" class="product-link" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; flex-grow: 1;">
+                            
+                            <div class="product-image-wrap">
+                                {{-- Quitamos las clases de Tailwind y usamos las puras de Bootstrap/CSS --}}
+                                <x-product-image 
+                                    :image="$product->imagen" 
+                                    :alt="$product->nombre" 
+                                    cssClass="img-fluid" 
+                                />
                             </div>
 
-                            <div class="product-name">
-                                {{ $product->nombre }}
+                            <div class="product-body">
+                                <div class="product-brand">
+                                    {{ $product->marca ?? 'Sin marca' }}
+                                </div>
+
+                                <div class="product-name">
+                                    {{ $product->nombre }}
+                                </div>
+
+                                <div class="product-desc">
+                                    {{ \Illuminate\Support\Str::limit($product->descripcion_corta ?? 'Sin descripción disponible.', 90) }}
+                                </div>
+
+                                <div class="product-price">
+                                    ${{ number_format($product->precio, 2) }} MXN
+                                </div>
                             </div>
+                            
+                        </a>
 
-                            <div class="product-desc">
-                                {{ \Illuminate\Support\Str::limit($product->descripcion_corta ?? 'Sin descripción disponible.', 90) }}
-                            </div>
-
-                            <div class="product-price text-green-600 font-bold">
-                                ${{ number_format($product->precio, 2) }} MXN
-                            </div>
-                        </div>
-                    </a>
-
-                    {{-- FORMULARIO CARRITO (MEJORADO) --}}
-                    <div class="product-actions p-3">
-                        <form action="{{ route('carrito.add', $product->id) }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="product_id" value="{{ $product->id }}">
-
-                            <div class="d-flex align-items-center gap-2">
-                                <input 
-                                    type="number" 
-                                    name="quantity" 
-                                    value="1" 
-                                    min="1" 
-                                    class="form-control form-control-sm"
-                                    style="width: 70px;"
-                                >
-
-                                <button type="submit" class="btn btn-success w-100">
-                                    <i class="bi bi-cart-plus me-1"></i> Agregar
+                        {{-- El botón de agregar al carrito queda fuera del enlace principal para que funcione el formulario --}}
+                        <div class="product-actions" style="padding: 0 18px 20px;">
+                            <form action="{{ route('carrito.add', $product->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn-cart">
+                                    <i class="bi bi-cart-plus me-1"></i> Añadir al carrito
                                 </button>
-                            </div>
-
-                            {{-- ERROR --}}
-                            @error('quantity')
-                                <p class="text-danger small mt-1">{{ $message }}</p>
-                            @enderror
-                        </form>
+                            </form>
+                        </div>
+                        
                     </div>
+                @endforeach
+            </div>
 
-                </div>
-            @endforeach
-        </div>
+            <div class="pagination-wrapper mt-4 d-flex justify-content-center">
+                {{ $products->links() }}
+            </div>
+        @else
+            <div class="empty-products">
+                <i class="bi bi-box-seam fs-1 text-muted d-block mb-3"></i>
+                No hay productos disponibles por el momento.
+            </div>
+        @endif
+    </div>
 
-        {{-- PAGINACIÓN --}}
-        <div class="pagination-wrapper mt-4 d-flex justify-content-center">
-            {{ $products->links() }}
-        </div>
-
-    @else
-        {{-- VACÍO --}}
-        <div class="empty-products text-center py-5">
-            <i class="bi bi-box-seam fs-1 text-muted d-block mb-3"></i>
-            No hay productos disponibles por el momento.
-        </div>
-    @endif
-</div>
-
-{{-- SCRIPT ALERTA --}}
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const alerta = document.querySelector('.alert-success');
-        if (alerta) {
-            setTimeout(() => {
-                const bsAlert = new bootstrap.Alert(alerta);
-                bsAlert.close();
-            }, 3000);
-        }
-    });
-</script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const alerta = document.querySelector('.alert-success');
+            if (alerta) {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alerta);
+                    bsAlert.close();
+                }, 3000);
+            }
+        });
+    </script>
 @endsection
