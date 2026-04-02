@@ -41,10 +41,10 @@
             <div class="col-lg-3 col-md-6">
                 <h6 class="text-white mb-3 fw-bold">Síguenos</h6>
                 <div class="d-flex gap-3">
-                    <a href="https://www.instagram.com/envycom.mx/" target="_blank" class="text-white-50 hover-white" style="font-size: 1.5rem;">
+                    <a href= "https://www.facebook.com/envycom.mx/"target="_blank" class="text-white-50 hover-white" style="font-size: 1.5rem;">
                         <i class="bi bi-facebook"></i>
                     </a>
-                    <a href="https://www.facebook.com/envycom.mx/" target="_blank" class="text-white-50 hover-white" style="font-size: 1.5rem;">
+                    <a href= "https://www.instagram.com/envycom.mx/"target="_blank" class="text-white-50 hover-white" style="font-size: 1.5rem;">
                         <i class="bi bi-instagram"></i>
                     </a>
                 </div>
