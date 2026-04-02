@@ -282,6 +282,7 @@ class CheckoutController extends Controller
 
     // 4. EJECUCIÓN DEL COBRO (Openpay)
         try {
+            $urlRedireccion = route('pedido.confirmado');
             // Cobro con el total dinámico
             $response = Http::withBasicAuth(config('services.openpay.private_key'), '')
                 ->post('https://sandbox-api.openpay.mx/v1/' . config('services.openpay.merchant_id') . '/charges', [
@@ -291,7 +292,7 @@ class CheckoutController extends Controller
                     'amount' => (float) $total,
                     'currency' => 'MXN',
                     'description' => 'Compra en Tienda ENVYCOM',
-                    'redirect_url' => route('pedido.confirmado')->with('success', '¡Pago exitoso! Tu folio es: ' . $orderNumber),
+                    'redirect_url' => $urlRedireccion,
                     'customer' => [
                         'name' => $user->name,
                         'email' => $user->email,
