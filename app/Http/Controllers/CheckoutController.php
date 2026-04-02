@@ -275,6 +275,11 @@ class CheckoutController extends Controller
     $costoEnvio = $this->calculateShipping($cart);
     $total = $subtotal + $costoEnvio;
 
+
+    $ultimoPedido = Order::latest('id')->first();
+    $siguienteId = $ultimoPedido ? $ultimoPedido->id + 1 : 1;
+    $orderNumber = 'ENV-' . date('Y') . '-' . str_pad($siguienteId, 4, '0', STR_PAD_LEFT);
+
     // 4. EJECUCIÓN DEL COBRO (Openpay)
         try {
             // Cobro con el total dinámico
@@ -286,6 +291,7 @@ class CheckoutController extends Controller
                     'amount' => (float) $total,
                     'currency' => 'MXN',
                     'description' => 'Compra en Tienda ENVYCOM',
+                    'redirect_url' => route('pedido.confirmado')->with('success', '¡Pago exitoso! Tu folio es: ' . $orderNumber),
                     'customer' => [
                         'name' => $user->name,
                         'email' => $user->email,
@@ -304,10 +310,10 @@ class CheckoutController extends Controller
         DB::beginTransaction();
 
         $direccionSnapshot = session()->get('checkout_address', 'Dirección no registrada');
-        $ultimoPedido = Order::latest('id')->first();
+        /*$ultimoPedido = Order::latest('id')->first();
         $siguienteId = $ultimoPedido ? $ultimoPedido->id + 1 : 1;
         $orderNumber = 'ENV-' . date('Y') . '-' . str_pad($siguienteId, 4, '0', STR_PAD_LEFT);
-
+        */
         $order = Order::create([
             'user_id' => $user->id,
             'order_number' => $orderNumber,
