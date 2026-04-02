@@ -20,6 +20,7 @@ Route::get('/dashboard', function (Request $request) {
 
 Route::get('/terminos-y-condiciones', function () {return view('legal.terminos');})->name('legal.terminos');
 Route::get('/aviso-de-privacidad', function () {return view('legal.privacidad');})->name('legal.privacidad');
+Route::get('/devoluciones', function () {return view('legal.devoluciones');})->name('legal.devoluciones');
 
 
 //Productos

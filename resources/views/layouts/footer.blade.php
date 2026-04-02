@@ -32,6 +32,9 @@
                     <li class="mb-2">
                         <a href="{{ url('/terminos-y-condiciones') }}" class="text-decoration-none text-white-50 hover-white">Términos y Condiciones</a>
                     </li>
+                    <li class="mb-2">
+                        <a href="{{ url('/devoluciones') }}" class="text-decoration-none text-white-50 hover-white">Políticas de Devolución y Envío</a>
+                    </li>
                 </ul>
             </div>
 
