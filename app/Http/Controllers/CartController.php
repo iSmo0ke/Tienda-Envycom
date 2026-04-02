@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Http\Requests\AddToCartRequest;
 
 class CartController extends Controller
 {
@@ -14,28 +15,30 @@ class CartController extends Controller
         return view('carrito', compact('cart')); // compact también cambia a 'cart'
     }
 
-    public function add($id)
+    public function add(AddToCartRequest $request)
     {
-        $product = Product::where('activo', true)->findOrFail($id);
+        // MAP: Obtenemos solo los campos validados
+        $validated = $request->validated();
+
+        $product = Product::where('activo', true)
+        ->findOrFail($validated['product_id']);
         $cart = session()->get('cart', []);
 
-        if (isset($cart[$id])) {
-            $cart[$id]['quantity']++; // CAMBIO: 'cantidad' a 'quantity'
+        // Lógica para agregar o actualizar cantidad en la sesión
+        if (isset($cart[$product->id])) {
+            $cart[$product->id]['quantity'] += $validated['quantity'];
         } else {
-            $cart[$id] = [
-                'id' => $product->id,
-                'name' => $product->nombre, // CAMBIO: 'nombre' a 'name' (asumo que tu DB todavía tiene 'nombre', si no, cambia a $product->name)
-                'brand' => $product->marca, // CAMBIO: 'marca' a 'brand'
-                'sku' => $product->sku ?? 'N/A',
-                'price' => $product->precio, // CAMBIO: 'precio' a 'price'
-                'quantity' => 1,            // CAMBIO: 'cantidad' a 'quantity'
-                'image' => $product->imagen ?? null, // CAMBIO: 'imagen' a 'image'
+            $cart[$product->id] = [
+                "id" => $product->id,
+                "name" => $product->nombre,
+                "quantity" => $validated['quantity'],
+                "price" => $product->precio,
+                "image" => $product->imagen_url
             ];
         }
 
         session()->put('cart', $cart);
-
-        return redirect()->back()->with('success', 'Producto agregado al carrito');
+        return back()->with('success', '¡Producto agregado al carrito!');
     }
 
     public function update(Request $request, $id)
