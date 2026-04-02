@@ -158,10 +158,10 @@
                                 </select>
                             </div>
                         @else
-                            <input type="hidden" name="address_id" value="new">
+                            <input type="hidden" name="address_id" value="new" checked>
                         @endif
 
-                        <div id="new-address-form" style="{{ $direcciones->count() > 0 ? 'display: none;' : '' }}">
+                        <div id="new-address-form" style="@if($direcciones->count() > 0) display: none; @endif">
                             <h5 class="form-label mb-3">Ingresar nueva dirección</h5>
                             <div class="row g-3">
                                 <div class="col-md-6">

@@ -11,7 +11,7 @@ class StoreAddressRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,31 +24,24 @@ class StoreAddressRequest extends FormRequest
         $isNew = $this->input('address_id') === 'new';
 
         return [
-            'address_id' => 'required',
-            'receptor_name' => $isNew ? 'required|string|max:255' : 'nullable',
-            'phone' => $isNew ? 'required|string|min:10' : 'nullable',
-            'calle_numero' => $isNew ? 'required|string' : 'nullable',
-            'colonia' => $isNew ? 'required|string' : 'nullable',
-            'municipio_alcaldia' => $isNew ? 'required|string' : 'nullable',
-            'estado' => $isNew ? 'required|string' : 'nullable',
-            'codigo_postal' => $isNew ? 'required|numeric|digits:5' : 'nullable',
-            'referencias' => 'nullable|string',
+            'address_id'      => 'required|string',
+            'sepomex_id'      => $isNew ? 'required|exists:postal_codes,id' : 'nullable', // ¡CRÍTICO!
+            'alias'           => 'nullable|string|max:50',
+            'receptor_name'   => $isNew ? 'required|string|max:150' : 'nullable',
+            'telefono'        => $isNew ? 'required|string|max:20' : 'nullable',
+            'zip_code'        => $isNew ? 'required|numeric|digits:5' : 'nullable',
+            'calle'           => $isNew ? 'required|string|max:255' : 'nullable',
+            'numero_exterior' => $isNew ? 'required|string|max:50' : 'nullable',
+            'numero_interior' => 'nullable|string|max:50',
+            'refencias'       => 'nullable|string|max:500', // Mantengo tu nombre 'refencias'
         ];
     }
 
     public function messages(): array
     {
         return [
-            'address_id.required' => 'El campo address_id es obligatorio.',
-            'receptor_name.required' => 'El campo receptor_name es obligatorio',
-            'phone.required' => 'El campo phone es obligatorio',
-            'calle_numero.required' => 'El campo calle_numero es obligatorio',
-            'colonia.required' => 'El campo colonia es obligatorio',
-            'municipio_alcaldia.required' => 'El campo municipio_alcaldia es obligatorio',
-            'estado.required' => 'El campo estado es obligatorio',
-            'codigo_postal.required' => 'El campo codigo_postal es obligatorio',
-            'codigo_postal.numeric' => 'El campo codigo_postal debe ser un número.',
-            'codigo_postal.digits' => 'El campo codigo_postal debe tener exactamente 5 dígitos.',
+            'address_id.exists' => 'La ubicación seleccionada no es válida en nuestro catálogo postal.',
+            'address_id.required' => 'Debes seleccionar una colonia válida de la lista.',
         ];
     }
     

@@ -198,6 +198,13 @@ $total = $subtotal + $envio;
     </div>
     @endif
 
+    @if (session('error'))
+    <div class="alert alert-danger rounded-4 shadow-sm border-0" style="background-color: #f8d7da; color: #842029;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ session('error') }}
+    </div>
+    @endif
+
     <div class="row g-4">
         <div class="col-lg-8">
             @if (empty($cart) || count($cart) === 0)
@@ -215,6 +222,7 @@ $total = $subtotal + $envio;
                 <div class="cart-item">
                     <div class="row align-items-center g-3">
 
+                        {{-- IMAGEN --}}
                         <div class="col-md-2 col-4 d-flex justify-content-center">
                             <x-product-image
                                 :image="$item['image']"
@@ -222,6 +230,7 @@ $total = $subtotal + $envio;
                                 cssClass="product-img" />
                         </div>
 
+                        {{-- INFO --}}
                         <div class="col-md-4 col-8">
                             <div class="brand">{{ $item['brand'] ?? 'MARCA' }}</div>
                             <div class="product-name">{{ $item['name'] }}</div>
@@ -230,28 +239,28 @@ $total = $subtotal + $envio;
                             </div>
                         </div>
 
+                        {{-- CANTIDAD --}}
                         <div class="col-md-2 col-6">
                             <label class="form-label small text-secondary mb-1">Cantidad</label>
-                            <form action="{{ route('carrito.update', $id) }}" method="POST">
-                                @csrf
-                                <div class="flex items-center">
-                                    <input
-                                        type="number"
-                                        name="quantity"
-                                        value="{{ $item['quantity'] }}"
-                                        class="w-16 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 @error('quantity') border-red-500 @enderror">
-                                    <button type="submit" class="ml-2 text-blue-600 hover:text-blue-800">
-                                        Actualizar
-                                    </button>
-                                </div>
 
-                                {{-- Mostrar error específico si la validación falla --}}
-                                @error('quantity')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                @enderror
+                            <form action="{{ route('carrito.update', $item['id']) }}" method="POST">
+                                @csrf
+
+                                <input
+                                    type="number"
+                                    name="cantidad"
+                                    value="{{ $item['quantity'] }}"
+                                    min="1"
+                                    class="form-control qty-box"
+                                    onchange="this.form.submit()">
                             </form>
+
+                            @error('cantidad')
+                            <p class="text-danger small mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
+                        {{-- PRECIO --}}
                         <div class="col-md-2 col-6">
                             <label class="form-label small text-secondary mb-1">Precio</label>
                             <div class="product-price">
@@ -259,15 +268,18 @@ $total = $subtotal + $envio;
                             </div>
                         </div>
 
+                        {{-- ELIMINAR --}}
                         <div class="col-md-2 col-12 text-md-end">
                             <form action="{{ route('carrito.remove', $item['id']) }}" method="POST">
                                 @csrf
                                 @method('DELETE')
+
                                 <button type="submit" class="remove-link">
                                     <i class="bi bi-trash"></i> Eliminar
                                 </button>
                             </form>
                         </div>
+
                     </div>
                 </div>
                 @endforeach
