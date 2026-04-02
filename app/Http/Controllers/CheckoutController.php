@@ -19,6 +19,39 @@ use Illuminate\Support\Facades\Http;
 
 class CheckoutController extends Controller
 {
+    private function calculateShipping($cart)
+    {
+        if (empty($cart)) return 0;
+
+        $hasCTProducts = false;
+        $hasLocalProducts = false;
+
+        foreach ($cart as $item) {
+            // Buscamos el producto para verificar su 'source'
+            $producto = Product::find($item['id']);
+            
+            // Si el source es 'ct' o viene de la sync de CT
+            if ($producto && $producto->source === 'ct') {
+                $hasCTProducts = true;
+            } else {
+                // Si no tiene source o es local (manual)
+                $hasLocalProducts = true;
+            }
+        }
+
+        // Prioridad 1: Si hay productos locales, aplicamos la regla de Alonso ($250)
+        if ($hasLocalProducts) {
+            return 250.00;
+        }
+
+        // Prioridad 2: Si solo son de CT, aplicamos tarifa plana de contingencia
+        if ($hasCTProducts) {
+            return 200.00; 
+        }
+
+        return 150.00; // Backup por si acaso
+    }
+    
     public function searchSepomexByZip(Request $request)
     {
         $validated = $request->validate([
@@ -50,9 +83,10 @@ class CheckoutController extends Controller
             $subtotal += $item['price'] * $item['quantity']; 
         }
 
-        $costoEnvio = 150.00;
+        $costoEnvio = $this->calculateShipping($cart);
         $total = $subtotal + $costoEnvio;
-         $direcciones = Auth::user()->addresses()->with('postalCode')->get();
+        
+        $direcciones = Auth::user()->addresses()->with('postalCode')->get();
 
         return view('checkout', compact('cart', 'subtotal', 'costoEnvio', 'total', 'direcciones'));
     }
@@ -183,7 +217,7 @@ class CheckoutController extends Controller
         foreach ($cart as $item) { 
             $subtotal += $item['price'] * $item['quantity']; 
         }
-        $costoEnvio = 150.00;
+        $costoEnvio = $this->calculateShipping($cart);
         $total = $subtotal + $costoEnvio;
 
         return view('payment', compact('total'));
@@ -238,24 +272,25 @@ class CheckoutController extends Controller
     foreach ($cart as $item) { 
         $subtotal += $item['price'] * $item['quantity']; 
     }
-    $costoEnvio = 150.00;
+    $costoEnvio = $this->calculateShipping($cart);
     $total = $subtotal + $costoEnvio;
 
     // 4. EJECUCIÓN DEL COBRO (Openpay)
-    try {
-        $response = Http::withBasicAuth(config('services.openpay.private_key'), '')
-            ->post('https://sandbox-api.openpay.mx/v1/' . config('services.openpay.merchant_id') . '/charges', [
-                'method' => 'card',
-                'source_id' => $request->token_id,
-                'device_session_id' => $request->device_session_id,
-                'amount' => (float) $total,
-                'currency' => 'MXN',
-                'description' => 'Compra en Tienda ENVYCOM',
-                'customer' => [
-                    'name' => $user->name,
-                    'email' => $user->email,
-                ]
-            ]);
+        try {
+            // Cobro con el total dinámico
+            $response = Http::withBasicAuth(config('services.openpay.private_key'), '')
+                ->post('https://sandbox-api.openpay.mx/v1/' . config('services.openpay.merchant_id') . '/charges', [
+                    'method' => 'card',
+                    'source_id' => $request->token_id,
+                    'device_session_id' => $request->device_session_id,
+                    'amount' => (float) $total,
+                    'currency' => 'MXN',
+                    'description' => 'Compra en Tienda ENVYCOM',
+                    'customer' => [
+                        'name' => $user->name,
+                        'email' => $user->email,
+            ]
+        ]);
 
         if ($response->failed()) {
             $error = $response->json();

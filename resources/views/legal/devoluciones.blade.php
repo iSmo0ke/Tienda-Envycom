@@ -29,7 +29,7 @@
             <li><strong>Cobertura:</strong> Realizamos envíos a toda la República Mexicana a través de las principales paqueterías (Estafeta, FedEx, DHL, entre otras).</li>
             <li><strong>Tiempos de entrega:</strong> El tiempo estimado de entrega es de 3 a 7 días hábiles posteriores a la confirmación de tu pago.</li>
             <li><strong>Procesamiento:</strong> Los pedidos realizados después de las 14:00 horas se procesarán al siguiente día hábil.</li>
-            <li><strong>Costo de envío:</strong> El costo se calculará al momento de finalizar la compra (Checkout) basándose en el peso y volumen del paquete.</li>
+            <li><strong>Costo de envío:</strong> Para asegurar la rapidez y seguridad en la entrega de sus productos tecnológicos, manejamos una tarifa fija de envío estándar garantizado a nivel nacional. El monto exacto aplicable a su orden se reflejará claramente en el resumen de su pedido antes de realizar cualquier pago.</li>
         </ul>
 
         <h2>2. Políticas de Devolución y Cancelación</h2>

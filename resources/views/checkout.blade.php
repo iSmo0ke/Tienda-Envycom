@@ -218,30 +218,28 @@
                         </div>
                     </div>
 
-                    {{-- Seccion metodo de entrega --}}
-
+{{-- Seccion metodo de entrega --}}
                     <div class="checkout-card">
                         <h2 class="section-title">Método de entrega</h2>
-
-                        <label class="delivery-option d-block">
-                            <input type="radio" name="entrega" checked>
-                            <strong>Envío estándar</strong>
-                            <div class="text-muted small mt-1">Entrega estimada de 3 a 5 días hábiles.</div>
-                        </label>
-
-                        <label class="delivery-option d-block">
-                            <input type="radio" name="entrega">
-                            <strong>Entrega express</strong>
-                            <div class="text-muted small mt-1">Entrega estimada de 1 a 2 días hábiles.</div>
-                        </label>
-
-                        <label class="delivery-option d-block">
-                            <input type="radio" name="entrega">
-                            <strong>Recoger en tienda</strong>
-                            <div class="text-muted small mt-1">Recoge tu pedido directamente en ENVYCOM.</div>
-                        </label>
+                    
+                        <div class="delivery-option d-block border-primary bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Envío Estándar Garantizado</strong>
+                                    <div class="text-muted small mt-1">Entrega estimada de 3 a 7 días hábiles a toda la República.</div>
+                                </div>
+                                <span class="badge bg-primary text-white" style="font-size: 0.9rem;">
+                                    ${{ number_format($costoEnvio, 2) }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <p class="text-muted small mt-3">
+                            <i class="fas fa-info-circle me-1"></i> 
+                            Por el momento, solo contamos con envío a domicilio para asegurar la rapidez en la entrega de tus productos tecnológicos.
+                        </p>
                     </div>
-                </div>
+                </div> {{-- AQUÍ ESTÁ LA CORRECCIÓN: Este div cierra el <div class="col-lg-8"> --}}
 
                 {{-- Seccion de resumen de pedido --}}
                 <div class="col-lg-4">
@@ -249,10 +247,10 @@
                         <h3 class="summary-title">Resumen del pedido</h3>
 
                         <div class="mb-3">
-                            @foreach ($cart as $item) {{-- CAMBIO --}}
+                            @foreach ($cart as $item) 
                                 <div class="d-flex justify-content-between small text-muted mb-1">
-                                    <span>{{ $item['quantity'] }}x {{ $item['name'] }}</span> {{-- CAMBIO --}}
-                                    <span>${{ number_format($item['price'] * $item['quantity'], 2) }}</span> {{-- CAMBIO --}}
+                                    <span>{{ $item['quantity'] }}x {{ $item['name'] }}</span> 
+                                    <span>${{ number_format($item['price'] * $item['quantity'], 2) }}</span> 
                                 </div>
                             @endforeach
                         </div>
