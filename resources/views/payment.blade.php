@@ -34,6 +34,26 @@
         border: 1px solid #e5e7eb;
     }
 
+    /* Estilos para los logos de tarjetas aceptadas */
+    .accepted-cards {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .accepted-cards img {
+        height: 22px;
+        width: auto;
+        opacity: 0.8;
+    }
+
+    .openpay-badge {
+        border-left: 1px solid #e5e7eb;
+        padding-left: 10px;
+        margin-left: 5px;
+    }
+
     .form-control-custom {
         border-radius: 0px; 
         padding: 14px 16px;
@@ -83,6 +103,15 @@
                     </div>
                     <h2 class="fw-bold" style="color: #111827;">Detalles de Pago</h2>
                     <p class="text-muted mb-0">Total a pagar: <strong class="text-dark fs-5">${{ number_format($total, 2) }}</strong></p>
+                    
+                    <div class="accepted-cards">
+                        <img src="https://img.icons8.com/color/48/visa.png" alt="Visa">
+                        <img src="https://img.icons8.com/color/48/mastercard.png" alt="Mastercard">
+                        <img src="https://img.icons8.com/color/48/amex.png" alt="Amex">
+                        <div class="openpay-badge">
+                            <img src="{{ asset('img/logo-open.jpg') }}" alt="Openpay" style="height: 18px;">
+                        </div>
+                    </div>
                 </div>
                 <div class="card-icons">
                     <i class="bi bi-credit-card-2-front-fill"></i>
