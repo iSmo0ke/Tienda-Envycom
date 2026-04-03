@@ -24,12 +24,12 @@ class CartController extends Controller
         } else {
             $cart[$id] = [
                 'id' => $product->id,
-                'name' => $product->nombre, // CAMBIO: 'nombre' a 'name' (asumo que tu DB todavía tiene 'nombre', si no, cambia a $product->name)
-                'brand' => $product->marca, // CAMBIO: 'marca' a 'brand'
-                'sku' => $product->sku ?? 'N/A',
-                'price' => $product->precio, // CAMBIO: 'precio' a 'price'
-                'quantity' => 1,            // CAMBIO: 'cantidad' a 'quantity'
-                'image' => $product->imagen ?? null, // CAMBIO: 'imagen' a 'image'
+                'name' => $product->nombre,
+                'brand' => $product->marca,
+                'numParte' => $product->numParte ?? 'N/A',
+                'price' => $product->precio,
+                'quantity' => 1,
+                'image' => $product->imagen ?? null,
             ];
         }
 

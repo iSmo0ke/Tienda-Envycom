@@ -148,7 +148,7 @@
                         <div class="bg-light p-3 rounded-4 mb-4" style="border: 1px solid #ececec;">
                             <ul class="list-unstyled info-list mb-0">
                                 <li><strong>Modelo:</strong> {{ $product->modelo }}</li>
-                                <li><strong>Número de Parte:</strong> {{ $product->numParte }}</li>
+                                <li><strong>SKU:</strong> {{ $product->numParte }}</li>
                                 <li><strong>Categoría:</strong> {{ $product->categoria }} > {{ $product->subcategoria }}</li>
                                 <li>
                                     <strong>Disponibilidad:</strong>

@@ -43,7 +43,7 @@
                             Hola, {{ Auth::user()->name }}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                            <li><a class="dropdown-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}" href="{{ route('profile.edit') }}">Mi Perfil</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Mi Perfil</a></li>
                             
                             @if(Auth::check() && Auth::user()->role === 'admin')
                                 <li>

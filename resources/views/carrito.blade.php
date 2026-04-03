@@ -234,7 +234,7 @@
                                         <div class="brand">{{ $item['brand'] ?? 'MARCA' }}</div>
                                         <div class="product-name">{{ $item['name'] }}</div>
                                         <div class="small text-secondary">
-                                            SKU: {{ $item['sku'] ?? 'N/A' }}
+                                            SKU: {{ $item['numParte'] ?? 'N/A' }}
                                         </div>
                                     </div>
 
