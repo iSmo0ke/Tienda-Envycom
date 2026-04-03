@@ -284,7 +284,8 @@ class CheckoutController extends Controller
 
             if ($response->failed()) {
                 $error = $response->json();
-                return redirect()->route('checkout.payment')->with('error', 'Pago declinado' );
+                Log::warning('Intento fallido de pago Openpay: ' . ($error['description'] ?? 'Desconocido') . ' | Usuario ID: ' . $user->id);
+                return redirect()->route('checkout.payment')->with('error', 'Tarjeta declinada, comuníquese con su banco por favor.');
             }
 
 

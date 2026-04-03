@@ -26,6 +26,7 @@
                 <ul class="list-unstyled small">
                     <li class="mb-2"><i class="bi bi-telephone-fill me-2 text-white"></i> 238 289 9275</li>
                     <li class="mb-2"><i class="bi bi-envelope-fill me-2 text-white"></i> contacto@envycom.com</li>
+                    <li class="mb-2"><i class="bi bi-geo-alt-fill me-2 text-white"></i> Centenario 537, G.Hidalgo, C.P. 75790, Tehuacán, Pue.</li>
                     <li class="mb-2 mt-4">
                         <a href="{{ url('/aviso-de-privacidad') }}" class="text-decoration-none text-white-50 hover-white">Política de Privacidad</a>
                     </li>

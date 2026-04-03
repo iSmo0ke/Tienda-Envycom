@@ -115,8 +115,6 @@
         @endforeach
     </div>
 
-    <h2 class="section-title text-center mb-4">EQUIPO DE TRABAJO</h2>
-
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const alerta = document.querySelector('.alert-success');
