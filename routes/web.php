@@ -56,7 +56,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/checkout/procesar', [CheckoutController::class, 'process'])->name('checkout.process');
 
     Route::get('/pedido-confirmado', function () {
-        $order = \App\Models\Order::where('user_id', \Illuminate\Support\Facades\Auth::id())->latest()->first();
+        $orderId = session()->pull('last_order_id');
+
+        if ($orderId) {
+            $order = \App\Models\Order::where('user_id', \Illuminate\Support\Facades\Auth::id())
+                ->where('id', $orderId)
+                ->first();
+        } else {
+            $order = \App\Models\Order::where('user_id', \Illuminate\Support\Facades\Auth::id())
+                ->latest()
+                ->first();
+        }
 
         if (!$order) {
             return redirect()->route('products.index');
@@ -90,6 +100,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/checkout/address', [CheckoutController::class, 'processAddress'])->name('checkout.processAddress'); // Guarda dirección
     Route::get('/checkout/payment', [CheckoutController::class, 'payment'])->name('checkout.payment'); // Muestra Openpay
     Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process'); // Cobra
+    Route::get('/checkout/openpay/3d-secure-callback', [CheckoutController::class, 'handle3DSecureReturn'])->name('checkout.openpay.callback');
 
     //Perfil usuario
     Route::post('/profile/address', [\App\Http\Controllers\ProfileController::class, 'storeAddress'])->name('profile.address.store')->middleware('auth');

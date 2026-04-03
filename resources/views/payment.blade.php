@@ -141,11 +141,11 @@
                 <div id="payment-errors" class="alert alert-danger mt-4 d-none shadow-sm" style="border-radius: 0; border: 1px solid #fca5a5; background-color: #fef2f2; color: #991b1b;"></div>
 
                 <button type="submit" id="pay-button" class="btn w-100 mt-4 py-3 fw-bold fs-5 shadow-sm" style="background-color: #25D366 !important; color: #111827 !important; border-radius: 0px; border: none;">
-                    <i class="bi bi-lock-fill me-2"></i> Pagar Pedido
+                    <i class="bi bi-shield-check me-2"></i> Continuar con verificacion segura
                 </button>
                 
                 <div class="text-center mt-3">
-                    <small class="text-muted"><i class="bi bi-info-circle"></i> Tus datos están encriptados y no se guardan en nuestros servidores.</small>
+                    <small class="text-muted"><i class="bi bi-info-circle"></i> Seras redirigido al banco para autenticar 3D Secure. Tus datos estan encriptados y no se guardan en nuestros servidores.</small>
                 </div>
             </form>
         </div>
@@ -160,7 +160,7 @@
     $(document).ready(function() {
         OpenPay.setId('{{ config('services.openpay.merchant_id') }}');
         OpenPay.setApiKey('{{ config('services.openpay.public_key') }}');
-        OpenPay.setSandboxMode(true); 
+        OpenPay.setSandboxMode(@json(!config('services.openpay.production')));
 
         var deviceSessionId = OpenPay.deviceData.setup();
         $('#device_session_id').val(deviceSessionId);
@@ -186,7 +186,7 @@
 
         var onError = function(error) {
             console.error("LOG DE OPENPAY:", error);
-            $('#pay-button').prop('disabled', false).html('<i class="bi bi-lock-fill me-2"></i> Pagar Pedido');
+            $('#pay-button').prop('disabled', false).html('<i class="bi bi-shield-check me-2"></i> Continuar con verificacion segura');
             
             var errorMsg = "Error al procesar la tarjeta: " + error.message;
             if(error.status == 422) errorMsg = "Los datos de la tarjeta son inválidos. Revisa el número y el CVV.";

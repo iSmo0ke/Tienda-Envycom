@@ -10,6 +10,7 @@ use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\User;
 
 use App\Exceptions\StockInsuficienteException;
 
@@ -224,66 +225,45 @@ class CheckoutController extends Controller
     }
 
     public function process(Request $request)
-{
-    // 1. Validaciones de Input de Openpay
-    $request->validate([
-        'token_id' => 'required',
-        'device_session_id' => 'required'
-    ]);
+    {
+        $request->validate([
+            'token_id' => 'required',
+            'device_session_id' => 'required',
+        ]);
 
-    $cart = session()->get('cart', []);
-    if (empty($cart)) {
-        return redirect()->route('products.index')->with('error', 'Tu carrito está vacío.');
-    }
-
-    $user = Auth::user();
-
-    // 2. ESCUDO DE SEGURIDAD (Validación PRE-PAGO)
-    foreach ($cart as $item) {
-        $producto = Product::find($item['id']);
-        
-        // A) Validar Existencia del Producto
-        if (!$producto || !$producto->activo) {
-            return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' ya no está disponible.");
+        $cart = session()->get('cart', []);
+        if (empty($cart)) {
+            return redirect()->route('products.index')->with('error', 'Tu carrito esta vacio.');
         }
 
-        // B) Validar Precio (Anti-Fraude)
-        if ((float)$producto->precio !== (float)$item['price']) {
-            // Sincronizamos el precio en la sesión para que el usuario vea el cambio al volver
-            $cart[$item['id']]['price'] = $producto->precio;
-            session()->put('cart', $cart);
-            
-            Log::alert("CAMBIO DE PRECIO DETECTADO: Usuario ID {$user->id} intentó pagar precio viejo.");
-            return redirect()->route('carrito')->with('error', "Los precios de algunos productos han cambiado. Por favor, verifica tu total.");
+        $user = Auth::user();
+
+        foreach ($cart as $item) {
+            $producto = Product::find($item['id']);
+
+            if (!$producto || !$producto->activo) {
+                return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' ya no esta disponible.");
+            }
+
+            if ((float) $producto->precio !== (float) $item['price']) {
+                $cart[$item['id']]['price'] = $producto->precio;
+                session()->put('cart', $cart);
+
+                Log::alert("CAMBIO DE PRECIO DETECTADO: Usuario ID {$user->id} intento pagar precio viejo.");
+                return redirect()->route('carrito')->with('error', 'Los precios de algunos productos han cambiado. Por favor, verifica tu total.');
+            }
         }
 
-        // C) Validar Stock (Manejo de JSON o Entero)
-        $stockData = json_decode($producto->existencia, true);
-        $stockReal = is_array($stockData) ? array_sum($stockData) : (int)$producto->existencia;
-
-        if ($stockReal < (int)$item['quantity']) {
-            Log::warning("STOCK INSUFICIENTE: Usuario ID {$user->id} para el producto {$producto->nombre}.");
-            return redirect()->route('carrito')->with('error', "Lo sentimos, el producto '{$producto->nombre}' ya no tiene stock suficiente.");
+        $subtotal = 0;
+        foreach ($cart as $item) {
+            $subtotal += $item['price'] * $item['quantity'];
         }
-    }
 
-    // 3. Cálculos de Montos
-    $subtotal = 0;
-    foreach ($cart as $item) { 
-        $subtotal += $item['price'] * $item['quantity']; 
-    }
-    $costoEnvio = $this->calculateShipping($cart);
-    $total = $subtotal + $costoEnvio;
+        $costoEnvio = $this->calculateShipping($cart);
+        $total = $subtotal + $costoEnvio;
 
-
-    $ultimoPedido = Order::latest('id')->first();
-    $siguienteId = $ultimoPedido ? $ultimoPedido->id + 1 : 1;
-    $orderNumber = 'ENV-' . date('Y') . '-' . str_pad($siguienteId, 4, '0', STR_PAD_LEFT);
-
-    // 4. EJECUCIÓN DEL COBRO (Openpay)
         try {
-            $urlRedireccion = route('pedido.confirmado');
-            // Cobro con el total dinámico
+            $redirectString = route('checkout.openpay.callback');
             $response = Http::withBasicAuth(config('services.openpay.private_key'), '')
                 ->post('https://sandbox-api.openpay.mx/v1/' . config('services.openpay.merchant_id') . '/charges', [
                     'method' => 'card',
@@ -292,81 +272,238 @@ class CheckoutController extends Controller
                     'amount' => (float) $total,
                     'currency' => 'MXN',
                     'description' => 'Compra en Tienda ENVYCOM',
-                    'redirect_url' => $urlRedireccion,
+                    'redirect_url' => $redirectString,
+                    'use_3d_secure' => true,
                     'customer' => [
                         'name' => $user->name,
                         'email' => $user->email,
-            ]
-        ]);
+                    ],
+                ]);
 
-        if ($response->failed()) {
-            $error = $response->json();
-            $mensaje = $error['description'] ?? 'El banco rechazó la transacción.';
-            return redirect()->route('checkout.payment')->with('error', 'Pago declinado: ' . $mensaje);
+        
+
+            if ($response->failed()) {
+                $error = $response->json();
+                return redirect()->route('checkout.payment')->with('error', 'Pago declinado' );
+            }
+
+
+            $charge = $response->json();
+            $chargeStatus = $charge['status'] ?? null;
+            $secureRedirectUrl = $charge['payment_method']['url'] ?? null;
+
+            if ($chargeStatus === 'charge_pending' && $secureRedirectUrl) {
+                session()->put('openpay_pending_checkout', [
+                    'charge_id' => $charge['id'] ?? null,
+                    'cart' => $cart,
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $costoEnvio,
+                    'total' => $total,
+                    'user_id' => $user->id,
+                    'shipping_address' => session()->get('checkout_address', 'Direccion no registrada'),
+                ]);
+
+                return redirect()->away($secureRedirectUrl);
+            }
+
+            if ($chargeStatus === 'completed') {
+                $order = $this->finalizeSuccessfulPayment(
+                    $user->id,
+                    $cart,
+                    (float) $subtotal,
+                    (float) $costoEnvio,
+                    (float) $total,
+                    $charge['id'] ?? null,
+                    session()->get('checkout_address', 'Direccion no registrada')
+                );
+
+                $this->sendOrderConfirmationEmail($order, $user->id);
+
+                session()->forget(['cart', 'checkout_address', 'openpay_pending_checkout']);
+                session()->put('last_order_id', $order->id);
+
+                return redirect()->route('pedido.confirmado')->with('success', 'Pago exitoso. Folio: ' . $order->order_number);
+            }
+
+            return redirect()->route('checkout.payment')->with('error', 'No fue posible confirmar el pago. Estado: ' . ($chargeStatus ?? 'desconocido'));
+        } catch (\Throwable $e) {
+            Log::critical('ERROR CRITICO EN PAGO OPENPAY: ' . $e->getMessage());
+            return redirect()->route('checkout.payment')->with('error', 'Hubo un problema al iniciar el pago. Intenta nuevamente.');
+        }
+    }
+
+    public function handle3DSecureReturn(Request $request)
+    {
+        $pendingCheckout = session()->get('openpay_pending_checkout');
+        $chargeIdFromOpenpay = $request->query('id');
+
+        if (!$pendingCheckout || empty($pendingCheckout['charge_id'])) {
+            return redirect()->route('checkout.payment')->with('error', 'No encontramos una autenticacion 3D Secure pendiente.');
         }
 
-        $charge = $response->json();
+        if ($chargeIdFromOpenpay && $chargeIdFromOpenpay !== $pendingCheckout['charge_id']) {
+            Log::warning('Openpay devolvio un charge id distinto al de la sesion.', [
+                'charge_id_callback' => $chargeIdFromOpenpay,
+                'charge_id_session' => $pendingCheckout['charge_id'],
+            ]);
+        }
 
-        // 5. REGISTRO DE ORDEN (Transacción Atómica)
-        DB::beginTransaction();
+        $chargeId = $pendingCheckout['charge_id'];
 
-        $direccionSnapshot = session()->get('checkout_address', 'Dirección no registrada');
-        /*$ultimoPedido = Order::latest('id')->first();
-        $siguienteId = $ultimoPedido ? $ultimoPedido->id + 1 : 1;
-        $orderNumber = 'ENV-' . date('Y') . '-' . str_pad($siguienteId, 4, '0', STR_PAD_LEFT);
-        */
-        $order = Order::create([
-            'user_id' => $user->id,
-            'order_number' => $orderNumber,
-            'status' => 'en_proceso',
-            'subtotal' => $subtotal,
-            'shipping_cost' => $costoEnvio,
-            'total' => $total,
-            'shipping_address' => $direccionSnapshot,
-            'payment_method' => 'openpay_card',
-            'payment_id' => $charge['id'],
-        ]);
+        try {
+            $response = Http::withBasicAuth(config('services.openpay.private_key'), '')
+                ->get($this->openpayBaseUrl() . '/v1/' . config('services.openpay.merchant_id') . '/charges/' . $chargeId);
 
-        foreach ($cart as $item) {
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $item['id'],
-                'quantity' => $item['quantity'],
-                'price' => $item['price'],
+            if ($response->failed()) {
+                $error = $response->json();
+                $mensaje = $error['description'] ?? 'No pudimos validar el estado final del pago.';
+                return redirect()->route('checkout.payment')->with('error', $mensaje);
+            }
+
+            $charge = $response->json();
+            $chargeStatus = $charge['status'] ?? null;
+
+            if ($chargeStatus === 'completed') {
+                $order = $this->finalizeSuccessfulPayment(
+                    (int) $pendingCheckout['user_id'],
+                    $pendingCheckout['cart'] ?? [],
+                    (float) ($pendingCheckout['subtotal'] ?? 0),
+                    (float) ($pendingCheckout['shipping_cost'] ?? 0),
+                    (float) ($pendingCheckout['total'] ?? 0),
+                    $charge['id'] ?? $chargeId,
+                    $pendingCheckout['shipping_address'] ?? 'Direccion no registrada'
+                );
+
+                $this->sendOrderConfirmationEmail($order, (int) $pendingCheckout['user_id']);
+
+                session()->forget(['cart', 'checkout_address', 'openpay_pending_checkout']);
+                session()->put('last_order_id', $order->id);
+
+                return redirect()->route('pedido.confirmado')->with('success', 'Pago exitoso. Folio: ' . $order->order_number);
+            }
+
+            session()->forget('openpay_pending_checkout');
+
+            $mensaje = $charge['description'] ?? 'La autenticacion 3D Secure no se completo correctamente.';
+            return redirect()->route('checkout.payment')->with('error', 'Pago no completado: ' . $mensaje);
+        } catch (\Throwable $e) {
+            Log::critical('ERROR VALIDANDO RETORNO 3D SECURE OPENPAY: ' . $e->getMessage() . $e->getLine());
+            return redirect()->route('checkout.payment')->with('error', 'No pudimos confirmar tu pago. Intenta nuevamente.');
+        }
+    }
+
+    private function finalizeSuccessfulPayment(
+        int $userId,
+        array $cart,
+        float $subtotal,
+        float $shippingCost,
+        float $total,
+        ?string $chargeId,
+        string $shippingAddress
+    ): Order {
+        return DB::transaction(function () use ($userId, $cart, $subtotal, $shippingCost, $total, $chargeId, $shippingAddress) {
+            if (empty($cart)) {
+                throw new \RuntimeException('No hay carrito para finalizar el pago.');
+            }
+
+            foreach ($cart as $item) {
+                $producto = Product::find($item['id']);
+
+                if (!$producto || !$producto->activo) {
+                    throw new StockInsuficienteException("El producto {$item['name']} ya no esta disponible.");
+                }
+
+                $stockData = json_decode($producto->existencia, true);
+                $stockReal = is_array($stockData) ? array_sum($stockData) : (int) $producto->existencia;
+                if ($stockReal < (int) $item['quantity']) {
+                    throw new StockInsuficienteException("Stock insuficiente para {$producto->nombre}.");
+                }
+            }
+
+            $order = Order::create([
+                'user_id' => $userId,
+                'order_number' => $this->generateOrderNumber(),
+                'status' => 'en_proceso',
+                'subtotal' => $subtotal,
+                'shipping_cost' => $shippingCost,
+                'total' => $total,
+                'shipping_address' => $shippingAddress,
+                'payment_method' => 'openpay_card',
+                'payment_id' => $chargeId,
             ]);
 
-            // ACTUALIZACIÓN DE STOCK (Respetando JSON o Int)
-            $p = Product::find($item['id']);
-            $actualStock = json_decode($p->existencia, true);
-            
-            if (is_array($actualStock)) {
-                // Restamos de la primera bodega que tenga stock (llave del JSON)
-                $key = array_key_first($actualStock);
-                $actualStock[$key] -= $item['quantity'];
-                $p->existencia = json_encode($actualStock);
-            } else {
-                $p->existencia = (int)$p->existencia - $item['quantity'];
+            foreach ($cart as $item) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item['id'],
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                ]);
+
+                $product = Product::find($item['id']);
+                $actualStock = json_decode($product->existencia, true);
+
+                if (is_array($actualStock)) {
+                    $remaining = (int) $item['quantity'];
+
+                    foreach ($actualStock as $warehouse => $qty) {
+                        if ($remaining <= 0) {
+                            break;
+                        }
+
+                        $qty = (int) $qty;
+                        if ($qty <= 0) {
+                            continue;
+                        }
+
+                        $discount = min($qty, $remaining);
+                        $actualStock[$warehouse] = $qty - $discount;
+                        $remaining -= $discount;
+                    }
+
+                    if ($remaining > 0) {
+                        throw new StockInsuficienteException("Stock insuficiente para {$product->nombre}.");
+                    }
+
+                    $product->existencia = json_encode($actualStock);
+                } else {
+                    $product->existencia = (int) $product->existencia - (int) $item['quantity'];
+                }
+
+                $product->save();
             }
-            $p->save();
+
+            return $order;
+        });
+    }
+
+    private function sendOrderConfirmationEmail(Order $order, int $userId): void
+    {
+        $user = User::find($userId);
+        if (!$user || !$user->email) {
+            return;
         }
 
-        DB::commit();
-
-        // 6. NOTIFICACIÓN Y LIMPIEZA
         try {
             Mail::to($user->email)->send(new OrderConfirmed($order));
-        } catch (\Exception $e) {
-            Log::error('Fallo envío de correo: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Fallo envio de correo de confirmacion: ' . $e->getMessage());
         }
-
-        session()->forget(['cart', 'checkout_address']);
-
-        return redirect()->route('pedido.confirmado')->with('success', '¡Pago exitoso! Folio: ' . $orderNumber);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::critical("ERROR CRÍTICO POST-PAGO: " . $e->getMessage());
-        return redirect()->route('products.index')->with('error', 'Hubo un problema al registrar tu pedido, pero el pago se realizó. ID Pago: ' . ($charge['id'] ?? 'N/A'));
     }
-}
+
+    private function generateOrderNumber(): string
+    {
+        do {
+            $orderNumber = 'ENV-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
+        } while (Order::where('order_number', $orderNumber)->exists());
+
+        return $orderNumber;
+    }
+
+    private function openpayBaseUrl(): string
+    {
+        return config('services.openpay.production')
+            ? 'https://api.openpay.mx'
+            : 'https://sandbox-api.openpay.mx';
+    }
 }
