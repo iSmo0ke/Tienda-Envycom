@@ -11,8 +11,6 @@ class ProductController extends Controller
 {
     public function index()
     {
-        // Traemos solo los productos locales (puedes filtrarlos si agregas una columna 'source' después, 
-        // por ahora traemos los más recientes)
         $products = Product::where('source', 'local')
                            ->orderBy('created_at', 'desc')
                            ->paginate(15);
@@ -22,7 +20,8 @@ class ProductController extends Controller
 
     public function create()
     {
-        return view('admin.products.create');
+        $categories = \App\Models\Product::whereNotNull('categoria')->distinct()->pluck('categoria');
+        return view('admin.products.create', compact('categories'));
     }
 
 public function store(Request $request)
@@ -30,11 +29,17 @@ public function store(Request $request)
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:255',
+            'model' => 'nullable|string|max:255',
             'brand' => 'nullable|string|max:255',
+            'category' => 'nullable|string|max:255',
             'price' => 'required|numeric|min:0',
             'short_description' => 'nullable|string',
             'stock' => 'nullable|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Validamos que sea imagen (máx 2MB)
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'spec_labels' => 'nullable|array',
+            'spec_labels.*' => 'nullable|string|max:255',
+            'spec_values' => 'nullable|array',
+            'spec_values.*' => 'nullable|string|max:255',
         ]);
 
         // Lógica de subida de imagen
@@ -43,19 +48,33 @@ public function store(Request $request)
             // Se guardará en storage/app/public/products
             $imagePath = $request->file('image')->store('products', 'public');
         }
+        $specifications = [];
+        if (!empty($request->spec_labels) && !empty($request->spec_values)) {
+            foreach ($request->spec_labels as $index => $label) {
+                // Solo si ambas tienen texto, las agregamos al arreglo
+                if (!empty($label) && !empty($request->spec_values[$index])) {
+                    $specifications[] = [
+                        'label' => $label,
+                        'value' => $request->spec_values[$index]
+                    ];
+                }
+            }
+        }
 
         $product = new Product();
         $product->idProducto = rand(10000000, 99999999); 
         $product->nombre = $validatedData['name'];
         $product->numParte = $validatedData['sku'];
+        $product->modelo = $validatedData['model'] ?? null;
         $product->marca = $validatedData['brand'];
+        $product->categoria = $validatedData['category'] ?? null;
         $product->precio = $validatedData['price'];
         $product->descripcion_corta = $validatedData['short_description'];
         $product->activo = true;
         $product->existencia = ['local' => $validatedData['stock'] ?? 0]; 
-        $product->imagen = $imagePath; // Guardamos la ruta
-        $product->source = 'local'; // Etiquetamos como producto nuestro
-        
+        $product->especificaciones = $specifications;
+        $product->imagen = $imagePath;
+        $product->source = 'local'; 
         $product->save();
 
         return redirect()->route('admin.products.index')
