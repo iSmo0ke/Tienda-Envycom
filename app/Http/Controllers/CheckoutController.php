@@ -201,9 +201,9 @@ class CheckoutController extends Controller
             // Buscamos el producto real en la base de datos
             $productoReal = Product::find($id);
 
-            // Si el producto ya no existe o fue desactivado (activo = 0)
-            if (!$productoReal || !$productoReal->activo) {
-                unset($cart[$id]); // Lo sacamos del carrito
+            // Revisamos si no existe, si está inactivo, O si ya no hay stock
+            if (!$productoReal || !$productoReal->activo || $productoReal->stock_disponible < $item['quantity']) {
+                unset($cart[$id]);
                 $productosRemovidos = true;
             }
         }
@@ -243,6 +243,10 @@ class CheckoutController extends Controller
 
             if (!$producto || !$producto->activo) {
                 return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' ya no esta disponible.");
+            }
+
+            if ($producto->stock_disponible < $item['quantity']) {
+                return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' no tiene inventario suficiente.");
             }
 
             if ((float) $producto->precio !== (float) $item['price']) {
@@ -414,9 +418,8 @@ class CheckoutController extends Controller
                     throw new StockInsuficienteException("El producto {$item['name']} ya no esta disponible.");
                 }
 
-                $stockData = json_decode($producto->existencia, true);
-                $stockReal = is_array($stockData) ? array_sum($stockData) : (int) $producto->existencia;
-                if ($stockReal < (int) $item['quantity']) {
+                
+                if ($producto->stock_disponible < (int) $item['quantity']) {
                     throw new StockInsuficienteException("Stock insuficiente para {$producto->nombre}.");
                 }
             }
@@ -442,13 +445,18 @@ class CheckoutController extends Controller
                 ]);
 
                 $product = Product::find($item['id']);
-                $actualStock = json_decode($product->existencia, true);
 
-                if (is_array($actualStock)) {
-                    $remaining = (int) $item['quantity'];
+                if ($product->source === 'local') {
+                    continue; 
+                }
 
-                    foreach ($actualStock as $warehouse => $qty) {
-                        if ($remaining <= 0) {
+                $actualStock = $product->existencia; 
+                $remainingToSubtract = (int) $item['quantity'];
+
+                if (isset($actualStock['total']) && is_array($actualStock['total'])) {
+                    
+                    foreach ($actualStock['total'] as $warehouse => $qty) {
+                        if ($remainingToSubtract <= 0) {
                             break;
                         }
 
@@ -457,21 +465,16 @@ class CheckoutController extends Controller
                             continue;
                         }
 
-                        $discount = min($qty, $remaining);
-                        $actualStock[$warehouse] = $qty - $discount;
-                        $remaining -= $discount;
+                        $discount = min($qty, $remainingToSubtract);
+                        
+                        $actualStock['total'][$warehouse] = $qty - $discount;
+                        
+                        $remainingToSubtract -= $discount;
                     }
 
-                    if ($remaining > 0) {
-                        throw new StockInsuficienteException("Stock insuficiente para {$product->nombre}.");
-                    }
-
-                    $product->existencia = json_encode($actualStock);
-                } else {
-                    $product->existencia = (int) $product->existencia - (int) $item['quantity'];
+                    $product->existencia = $actualStock;
+                    $product->save();
                 }
-
-                $product->save();
             }
 
             return $order;

@@ -2,18 +2,19 @@ Envycom Ecommerce
 
 <!-- Inicializar proyecto -->
 1. Clonar repositorio
-2. Instalar dependencias de PHP:
-    - composer install
-3. Instalar dependecias frontend:
-    - npm install
+    En php.ini descomentar la linea extension=ftp para activarlo
+    De igual forma con la line extension=zip
+2. Para instalar dependencias y configuraciones ejecutar:
+    composer run setup
 
 4. Configuracion de entorno
     - Copiar .env
+    - Copiar productos.xls en storage\app\productos.xlsx
 
 5. Migraciones y Datos
     - php artisan migrate (Solo para la estructura de la BD)
     - php artisan migrate --seed (Para jalar productos de ct (productos.json))
-    - php artisan app:import-local-products (Para jalar productos externos a CT)
+    - php artisan products:import-local (Para jalar productos externos a CT)
 
     - php artisan storage:link (symlink para que las imagenes sean visibles)
 
