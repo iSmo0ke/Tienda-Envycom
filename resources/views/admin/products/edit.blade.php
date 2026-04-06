@@ -49,15 +49,6 @@
                                     @endif
                                 </datalist>
                             </div>
-
-                            <div class="form-group">
-                                <label for="subcategory" class="block font-medium text-gray-700">Subcategoría</label>
-                                <input list="subcategory-options" name="subcategory" id="subcategory" value="{{ old('subcategory', $product->subcategoria) }}" 
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <datalist id="subcategory-options">
-                                    <option value="Workstations"><option value="iPads"><option value="Macs">
-                                </datalist>
-                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
