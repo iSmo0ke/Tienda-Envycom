@@ -64,4 +64,45 @@ class Product extends Model
 
         return 0;
     }
+
+    // Scope para motor de búsqueda y filtros
+    public function scopeFiltrar($query, array $filtros)
+    {
+        // 1. Buscador de texto (Insensible a mayúsculas/minúsculas)
+        $query->when($filtros['buscar'] ?? null, function ($query, $buscar) {
+            // Convertimos lo que el usuario escribió a minúsculas
+            $buscarLimpio = strtolower($buscar); 
+            
+            $query->where(function ($q) use ($buscarLimpio) {
+                // Usamos LOWER() para convertir temporalmente la base de datos a minúsculas y comparar
+                $q->whereRaw('LOWER(nombre) LIKE ?', ['%' . $buscarLimpio . '%'])
+                  ->orWhereRaw('LOWER(descripcion_corta) LIKE ?', ['%' . $buscarLimpio . '%'])
+                  ->orWhereRaw('LOWER(numParte) LIKE ?', ['%' . $buscarLimpio . '%'])
+                  ->orWhereRaw('LOWER(marca) LIKE ?', ['%' . $buscarLimpio . '%']);
+            });
+        });
+
+        // 2. Filtro exacto por Categoría
+        $query->when($filtros['categoria'] ?? null, function ($query, $categoria) {
+            $query->where('categoria', $categoria);
+        });
+
+        // 3. Filtro exacto por Marca
+        $query->when($filtros['marca'] ?? null, function ($query, $marca) {
+            $query->where('marca', $marca);
+        });
+
+        // 4. Ordenamiento dinámico
+        $query->when($filtros['ordenar'] ?? 'recientes', function ($query, $ordenar) {
+            if ($ordenar === 'menor_precio') {
+                $query->orderBy('precio', 'asc');
+            } elseif ($ordenar === 'mayor_precio') {
+                $query->orderBy('precio', 'desc');
+            } elseif ($ordenar === 'az') {
+                $query->orderBy('nombre', 'asc');
+            } else {
+                $query->orderBy('created_at', 'desc');
+            }
+        });
+    }
 }

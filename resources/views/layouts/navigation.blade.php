@@ -9,21 +9,33 @@
 
     <div class="collapse navbar-collapse" id="navbarEnvycom">
         <ul class="navbar-nav me-auto ms-4">
-            <li class="nav-item"><a class="nav-link {{ request()->is('/') ? 'active' : '' }}" href="{{ url('/') }}">Inicio</a></li>
-            <li class="nav-item"><a class="nav-link {{ request()->is('laptops*') ? 'active' : '' }}" href="#">Laptops</a></li>
-            <li class="nav-item"><a class="nav-link {{ request()->is('desktops*') ? 'active' : '' }}" href="#">Desktops</a></li>
-            <li class="nav-item"><a class="nav-link {{ request()->is('impresoras*') ? 'active' : '' }}" href="#">Impresoras</a></li>
+            <a href="{{ url('/productos') }}" class="nav-link">Inicio</a>
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarCategorias" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Categorías
+                </a>
+                <ul class="dropdown-menu shadow-sm border-0" aria-labelledby="navbarCategorias">
+                    <li><a class="dropdown-item" href="{{ url('/productos?categoria=Laptops') }}">Laptops</a></li>
+                    <li><a class="dropdown-item" href="{{ url('/productos?categoria=Computadoras') }}">Computadoras</a></li>
+                    <li><a class="dropdown-item" href="{{ url('/productos?categoria=Tarjetas') }}">Tarjetas</a></li>
+                    <li><a class="dropdown-item" href="{{ url('/productos?categoria=Software_') }}">Software</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item fw-bold text-primary" href="{{ url('/productos') }}">Ver todo el catálogo</a></li>
+                </ul>
+            </li>
         </ul>
 
 <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-3 mt-3 mt-lg-0">
             
-            <form action="{{ route('productos.buscar') }}" method="GET" class="d-flex flex-grow-1" style="max-width: 400px;">
+            <form action="{{ url('/productos') }}" method="GET" class="d-flex flex-grow-1" style="max-width: 400px;">
                 <input 
-                    type="text" 
-                    name="search" 
+                    type="search"    
+                    name="buscar" 
                     class="form-control me-2" 
                     placeholder="¿Qué estás buscando?"
-                    value="{{ request('search') }}"
+                    aria-label="Search"
+                    value="{{ request('buscar') }}"
                 >
                 <button type="submit" class="btn btn-light">Buscar</button>
             </form>

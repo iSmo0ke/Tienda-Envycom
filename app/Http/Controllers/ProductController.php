@@ -7,34 +7,24 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::where('activo', true)->paginate(12);
+        // 1. Filtramos categorías para ignorar nulos y textos vacíos ("")
+        $categorias = \App\Models\Product::whereNotNull('categoria')
+                                         ->where('categoria', '!=', '') // Ignora las que están en blanco
+                                         ->where('categoria', '!=', ' ') // Ignora las que solo tienen un espacio
+                                         ->where('activo', true)
+                                         ->distinct()
+                                         ->pluck('categoria');
 
-        return view('products.index', compact('products'));
+        // 2. Traemos los productos usando nuestro nuevo Scope 'filtrar'
+        $products = \App\Models\Product::where('activo', true)
+                                        ->filtrar(request(['buscar', 'categoria', 'marca', 'ordenar']))
+                                        ->paginate(12);
+
+        return view('products.index', compact('products', 'categorias'));
     }
-
-    public function buscar(Request $request)
-    {
-        $search = $request->search;
-
-        if (empty($search)) {
-            return redirect()->url('/productos'); 
-        }
-
-        $products = Product::where('activo', true)
-            ->where(function ($query) use ($search) {
-                $query->where('nombre', 'like', '%' . $search . '%')
-                      ->orWhere('descripcion_corta', 'like', '%' . $search . '%')
-                      ->orWhere('marca', 'like', '%' . $search . '%');
-            })
-            ->paginate(12);
-
-        $products->appends(['search' => $search]);
-
-        return view('products.resultados', compact('products', 'search'));
-    }
-
+    
     public function show($id)
     {
         $product = Product::where('activo', true)->findOrFail($id);
