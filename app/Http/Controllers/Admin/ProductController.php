@@ -83,52 +83,71 @@ public function store(Request $request)
 
     public function edit(Product $product)
     {
+        $categories = \App\Models\Product::whereNotNull('categoria')->distinct()->pluck('categoria');
         return view('admin.products.edit', compact('product'));
     }
 
     public function update(Request $request, Product $product)
     {
-        // 1. Validamos los datos de entrada
+        // 1. Validamos los datos
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:255',
+            'model' => 'nullable|string|max:255',
             'brand' => 'nullable|string|max:255',
+            'category' => 'nullable|string|max:255',
+            'subcategory' => 'nullable|string|max:255',
             'price' => 'required|numeric|min:0',
             'short_description' => 'nullable|string',
-            'stock' => 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Validación de imagen
+            'stock' => 'nullable|integer|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'spec_labels' => 'nullable|array',
+            'spec_labels.*' => 'nullable|string|max:255',
+            'spec_values' => 'nullable|array',
+            'spec_values.*' => 'nullable|string|max:255',
         ]);
 
         // 2. Manejo de la imagen
-        // Conservamos la ruta de la imagen actual por defecto
         $imagePath = $product->imagen; 
-
         if ($request->hasFile('image')) {
-            // Si el producto ya tenía una imagen local, la borramos del disco para ahorrar espacio
             if ($product->imagen && !str_starts_with($product->imagen, 'http')) {
-                Storage::disk('public')->delete($product->imagen);
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($product->imagen);
             }
-            
-            // Subimos la nueva imagen
             $imagePath = $request->file('image')->store('products', 'public');
         }
 
-        // 3. Recuperamos el arreglo JSON de existencia y lo modificamos
-        $existencia = $product->existencia ?? [];
-        $existencia['local'] = $validatedData['stock'];
+        // 3. Re-armamos el arreglo de especificaciones
+        $specifications = [];
+        if (!empty($request->spec_labels) && !empty($request->spec_values)) {
+            foreach ($request->spec_labels as $index => $label) {
+                if (!empty($label) && !empty($request->spec_values[$index])) {
+                    $specifications[] = [
+                        'label' => $label,
+                        'value' => $request->spec_values[$index]
+                    ];
+                }
+            }
+        }
 
-        // 4. Actualizamos el producto en la base de datos
+        // 4. Modificamos el stock (solo tocamos la llave 'local')
+        $existencia = $product->existencia ?? [];
+        $existencia['local'] = $validatedData['stock'] ?? 0;
+
+        // 5. Actualizamos el producto (Mapeando Request -> BD)
         $product->update([
             'nombre' => $validatedData['name'],
             'numParte' => $validatedData['sku'],
+            'modelo' => $validatedData['model'] ?? null,
             'marca' => $validatedData['brand'],
+            'categoria' => $validatedData['category'] ?? null,
+            'subcategoria' => $validatedData['subcategory'] ?? null,
             'precio' => $validatedData['price'],
             'descripcion_corta' => $validatedData['short_description'],
             'existencia' => $existencia,
+            'especificaciones' => $specifications,
             'imagen' => $imagePath,
         ]);
 
-        // 5. Redireccionamos con mensaje de éxito
         return redirect()->route('admin.products.index')
                          ->with('success', 'Producto actualizado exitosamente.');
     }

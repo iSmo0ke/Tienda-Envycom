@@ -26,7 +26,7 @@
 
                             <div class="form-group">
                                 <label for="modelo" class="block font-medium text-gray-700">Modelo</label>
-                                <input type="text" name="modelo" id="modelo" value="{{ old('modelo') }}"
+                                <input type="text" name="model" id="modelo" value="{{ old('modelo') }}"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
 
