@@ -113,7 +113,7 @@
                 </div>
             </div>
 
-            <a href="{{ route('profile.pedidos') }}" class="btn-order-success">
+            <a href="{{ route('dashboard') }}" class="btn-order-success">
                 Ver mis pedidos
             </a>
         </div>

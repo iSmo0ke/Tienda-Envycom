@@ -55,6 +55,35 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
     Route::post('/checkout/procesar', [CheckoutController::class, 'process'])->name('checkout.process');
 
+    Route::get('/pedido-confirmado', function () {
+        $orderId = session()->pull('last_order_id');
+
+        if ($orderId) {
+            $order = \App\Models\Order::where('user_id', \Illuminate\Support\Facades\Auth::id())
+                ->where('id', $orderId)
+                ->first();
+        } else {
+            $order = \App\Models\Order::where('user_id', \Illuminate\Support\Facades\Auth::id())
+                ->latest()
+                ->first();
+        }
+
+        if (!$order) {
+            return redirect()->route('products.index');
+        }
+
+        return view('pedido-confirmado', compact('order'));
+    })->name('pedido.confirmado');
+
+    Route::get('/mi-cuenta/pedidos', function () {
+        $pedidos = \App\Models\Order::with('items.product')
+                    ->where('user_id', \Illuminate\Support\Facades\Auth::id())
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+        return view('profile.pedidos', compact('pedidos'));
+    })->name('profile.pedidos');
+
     // Ruta para ver un pedido específico
     Route::get('/mi-cuenta/pedidos/{id}', function ($id) {
         $pedido = \App\Models\Order::with('items.product')
