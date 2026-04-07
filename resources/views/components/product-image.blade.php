@@ -1,18 +1,13 @@
-@props(['image', 'alt' => '', 'cssClass' => ''])
+@props(['image', 'alt' => 'Imagen del producto', 'cssClass' => ''])
 
-@php
-    // Lógica para determinar el origen de la imagen
-    $src = $image;
-
-    // Si no es una URL (no empieza con http), buscamos en el storage local
-    if ($image && !str_starts_with($image, 'http')) {
-        $src = asset('storage/' . $image);
-    }
-
-    // Imagen por defecto si no existe
-    if (!$image) {
-        $src = asset('img/icono-gris.jpg');
-    }
-@endphp
-
-<img src="{{ $src }}" alt="{{ $alt }}" class="{{ $cssClass }}" loading="lazy">
+@if($image)
+    @if(\Illuminate\Support\Str::startsWith($image, ['http://', 'https://']))
+        <img src="{{ $image }}" alt="{{ $alt }}" class="{{ $cssClass }}">
+    @else
+        <img src="{{ asset('storage/' . $image) }}" alt="{{ $alt }}" class="{{ $cssClass }}">
+    @endif
+@else
+    <div src="asset('img/icono-gris.jpg');" class="{{ $cssClass }} d-flex align-items-center justify-content-center text-muted" style="background-color: #f8f9fa;">
+        <span>Sin Img</span>
+    </div>
+@endif

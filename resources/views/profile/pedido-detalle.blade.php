@@ -92,11 +92,11 @@
                 
                 @foreach($pedido->items as $item)
                     <div class="product-row">
-                        @if($item->product && $item->product->imagen)
-                            <img src="{{ asset('storage/' . $item->product->imagen) }}" alt="{{ $item->product->nombre }}" class="product-img">
-                        @else
-                            <div class="product-img d-flex align-items-center justify-content-center text-muted small">Img</div>
-                        @endif
+                        <x-product-image 
+                            :image="$item->product ? $item->product->imagen : null" 
+                            :alt="$item->product ? $item->product->nombre : 'Producto eliminado'" 
+                            cssClass="product-img" 
+                        />
                         
                         <div class="flex-grow-1">
                             <strong class="d-block">{{ $item->product->nombre ?? 'Producto no disponible' }}</strong>
