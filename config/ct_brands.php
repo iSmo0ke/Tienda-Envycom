@@ -42,7 +42,7 @@ return [
         'Toshiba', 'Vankyo', 'Verbatim', 'Western Digital', 'Wilson Jones',
 
         //
-        'Apple', 'Asus', 'Asus Business', 'Dell', 'Hp', 'Lenovo', 'Samsung', 'Xerox',
+        'Apple', 'Asus', 'Asus Business', 'Dell', 'Hp', 'Samsung', 'Xerox',
 
         //?SYSCOM
         'Allied Telesis', 'Alter', 'Anviz', 'Apc', 'Belden', 'Bolide', 
