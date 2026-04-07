@@ -9,15 +9,16 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Filtramos categorías para ignorar nulos y textos vacíos ("")
+        // 1. Filtramos categorías para ignorar nulos, textos vacíos y ordenamos alfabéticamente
         $categorias = \App\Models\Product::whereNotNull('categoria')
-                                         ->where('categoria', '!=', '') // Ignora las que están en blanco
-                                         ->where('categoria', '!=', ' ') // Ignora las que solo tienen un espacio
+                                         ->where('categoria', '!=', '') 
+                                         ->where('categoria', '!=', ' ') 
                                          ->where('activo', true)
                                          ->distinct()
+                                         ->orderBy('categoria', 'asc') 
                                          ->pluck('categoria');
 
-        // 2. Traemos los productos usando nuestro nuevo Scope 'filtrar'
+        // 2. Traemos los productos usando el Scope 'filtrar'
         $products = \App\Models\Product::where('activo', true)
                                         ->filtrar(request(['buscar', 'categoria', 'marca', 'ordenar']))
                                         ->paginate(12);
