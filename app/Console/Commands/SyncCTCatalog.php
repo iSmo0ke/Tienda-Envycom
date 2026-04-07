@@ -136,7 +136,7 @@ class SyncCTCatalog extends Command
                     'existencia' => isset($prod['existencia']) ? json_encode(['total' => $prod['existencia']]) : json_encode([]), 
                     'especificaciones' => isset($prod['especificaciones']) ? json_encode($prod['especificaciones']) : json_encode([]),
                     'promociones' => isset($prod['promociones']) ? json_encode($prod['promociones']) : json_encode([]),
-                    'imagen' => $prod['imagen'] ?? null,
+                    'imagen' => $rutaLocalImagen,
                     'activo' => true,
                     'source' => 'CT',
                     'created_at' => now(),
