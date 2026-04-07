@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Models\Product;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 
 class SyncCTCatalog extends Command
 {
@@ -93,6 +94,33 @@ class SyncCTCatalog extends Command
                 }
 
                 $skusProcesados[] = $numParte;
+                
+                // --- NUEVA LÓGICA DE DESCARGA DE IMÁGENES ---
+                $imagenUrl = $prod['imagen'] ?? null;
+                $rutaLocalImagen = null;
+
+                if ($imagenUrl) {
+                    // Sacamos el nombre del archivo (ej. ACPARU150_full.jpg)
+                    $nombreImagen = basename(parse_url($imagenUrl, PHP_URL_PATH));
+                    $rutaDestino = 'productos/' . $nombreImagen;
+
+                    // Verificamos si YA descargamos esta imagen antes
+                    if (!Storage::disk('public')->exists($rutaDestino)) {
+                        try {
+                            $response = Http::timeout(5)->get($imagenUrl);
+                            
+                            if ($response->successful()) {
+                                Storage::disk('public')->put($rutaDestino, $response->body());
+                                $rutaLocalImagen = $rutaDestino;
+                            }
+                        } catch (\Exception $e) {
+                            $rutaLocalImagen = null;
+                        }
+                    } else {
+                        // Si ya existe, guardamos la ruta
+                        $rutaLocalImagen = $rutaDestino;
+                    }
+                }
 
                 // Mapear los datos del JSON a las columnas de nuestra BD
                 $productosAImportar[] = [
