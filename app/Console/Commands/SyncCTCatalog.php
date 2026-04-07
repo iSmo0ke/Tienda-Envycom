@@ -102,10 +102,13 @@ class SyncCTCatalog extends Command
                     'modelo' => $prod['modelo'] ?? null,
                     'marca' => $prod['marca'] ?? 'Desconocida',
                     'categoria' => $prod['categoria'] ?? null,
+                    'subcategoria' => $prod['subcategoria'] ?? null,
                     'descripcion_corta' => $prod['descripcion_corta'] ?? null,
                     'precio' => $prod['precio'] ?? 0,
                     'existencia' => isset($prod['existencia']) ? json_encode(['total' => $prod['existencia']]) : json_encode([]), 
                     'especificaciones' => isset($prod['especificaciones']) ? json_encode($prod['especificaciones']) : json_encode([]),
+                    'promociones' => isset($prod['promociones']) ? json_encode($prod['promociones']) : json_encode([]),
+                    'imagen' => $prod['imagen'] ?? null,
                     'activo' => true,
                     'source' => 'CT',
                     'created_at' => now(),
@@ -122,7 +125,14 @@ class SyncCTCatalog extends Command
                 Product::upsert(
                     $bloque,
                     ['numParte'], // Columna única para identificar si ya existe
-                    ['nombre', 'precio', 'existencia', 'activo', 'updated_at'] // Columnas a actualizar si ya existe
+                    ['nombre', 
+                    'precio', 
+                    'existencia',
+                    'subcategoria',
+                    'promociones', 
+                    'imagen',    
+                    'activo', 
+                    'updated_at']
                 );
             });
             $this->newLine();
