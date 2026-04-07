@@ -225,117 +225,116 @@ class CheckoutController extends Controller
     }
 
     public function process(Request $request)
-    {
-        $request->validate([
-            'token_id' => 'required',
-            'device_session_id' => 'required',
-        ]);
+{
+    $request->validate([
+        'token_id' => 'required',
+        'device_session_id' => 'required',
+    ]);
 
-        $cart = session()->get('cart', []);
-        if (empty($cart)) {
-            return redirect()->route('products.index')->with('error', 'Tu carrito esta vacio.');
+    $cart = session()->get('cart', []);
+    if (empty($cart)) {
+        return redirect()->route('products.index')->with('error', 'Tu carrito esta vacio.');
+    }
+
+    $user = Auth::user();
+
+    foreach ($cart as $item) {
+        $producto = Product::find($item['id']);
+
+        if (!$producto || !$producto->activo) {
+            return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' ya no esta disponible.");
         }
 
-        $user = Auth::user();
-
-        foreach ($cart as $item) {
-            $producto = Product::find($item['id']);
-
-            if (!$producto || !$producto->activo) {
-                return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' ya no esta disponible.");
-            }
-
-            if ($producto->stock_disponible < $item['quantity']) {
-                return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' no tiene inventario suficiente.");
-            }
-
-            if ((float) $producto->precio !== (float) $item['price']) {
-                $cart[$item['id']]['price'] = $producto->precio;
-                session()->put('cart', $cart);
-
-                Log::alert("CAMBIO DE PRECIO DETECTADO: Usuario ID {$user->id} intento pagar precio viejo.");
-                return redirect()->route('carrito')->with('error', 'Los precios de algunos productos han cambiado. Por favor, verifica tu total.');
-            }
+        if ($producto->stock_disponible < $item['quantity']) {
+            return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' no tiene inventario suficiente.");
         }
 
-        $subtotal = 0;
-        foreach ($cart as $item) {
-            $subtotal += $item['price'] * $item['quantity'];
-        }
+        if ((float) $producto->precio !== (float) $item['price']) {
+            $cart[$item['id']]['price'] = $producto->precio;
+            session()->put('cart', $cart);
 
-        $costoEnvio = $this->calculateShipping($cart);
-        $total = $subtotal + $costoEnvio;
-
-        try {
-            $redirectString = route('checkout.openpay.callback');
-            $response = Http::withBasicAuth(config('services.openpay.private_key'), '')
-                ->post('https://sandbox-api.openpay.mx/v1/' . config('services.openpay.merchant_id') . '/charges', [
-                    'method' => 'card',
-                    'source_id' => $request->token_id,
-                    'device_session_id' => $request->device_session_id,
-                    'amount' => (float) $total,
-                    'currency' => 'MXN',
-                    'description' => 'Compra en Tienda ENVYCOM',
-                    'redirect_url' => $redirectString,
-                    'use_3d_secure' => true,
-                    'customer' => [
-                        'name' => $user->name,
-                        'email' => $user->email,
-                    ],
-                ]);
-
-        
-
-            if ($response->failed()) {
-                $error = $response->json();
-                Log::warning('Intento fallido de pago Openpay: ' . ($error['description'] ?? 'Desconocido') . ' | Usuario ID: ' . $user->id);
-                return redirect()->route('checkout.payment')->with('error', 'Tarjeta declinada, comuníquese con su banco por favor.');
-            }
-
-
-            $charge = $response->json();
-            $chargeStatus = $charge['status'] ?? null;
-            $secureRedirectUrl = $charge['payment_method']['url'] ?? null;
-
-            if ($chargeStatus === 'charge_pending' && $secureRedirectUrl) {
-                session()->put('openpay_pending_checkout', [
-                    'charge_id' => $charge['id'] ?? null,
-                    'cart' => $cart,
-                    'subtotal' => $subtotal,
-                    'shipping_cost' => $costoEnvio,
-                    'total' => $total,
-                    'user_id' => $user->id,
-                    'shipping_address' => session()->get('checkout_address', 'Direccion no registrada'),
-                ]);
-
-                return redirect()->away($secureRedirectUrl);
-            }
-
-            if ($chargeStatus === 'completed') {
-                $order = $this->finalizeSuccessfulPayment(
-                    $user->id,
-                    $cart,
-                    (float) $subtotal,
-                    (float) $costoEnvio,
-                    (float) $total,
-                    $charge['id'] ?? null,
-                    session()->get('checkout_address', 'Direccion no registrada')
-                );
-
-                $this->sendOrderConfirmationEmail($order, $user->id);
-
-                session()->forget(['cart', 'checkout_address', 'openpay_pending_checkout']);
-                session()->put('last_order_id', $order->id);
-
-                return redirect()->route('pedido.confirmado')->with('success', 'Pago exitoso. Folio: ' . $order->order_number);
-            }
-
-            return redirect()->route('checkout.payment')->with('error', 'No fue posible confirmar el pago. Estado: ' . ($chargeStatus ?? 'desconocido'));
-        } catch (\Throwable $e) {
-            Log::critical('ERROR CRITICO EN PAGO OPENPAY: ' . $e->getMessage());
-            return redirect()->route('checkout.payment')->with('error', 'Hubo un problema al iniciar el pago. Intenta nuevamente.');
+            Log::alert("CAMBIO DE PRECIO DETECTADO: Usuario ID {$user->id} intento pagar precio viejo.");
+            return redirect()->route('carrito')->with('error', 'Los precios de algunos productos han cambiado. Por favor, verifica tu total.');
         }
     }
+
+    $subtotal = 0;
+    foreach ($cart as $item) {
+        $subtotal += $item['price'] * $item['quantity'];
+    }
+
+    $costoEnvio = $this->calculateShipping($cart);
+    $total = $subtotal + $costoEnvio;
+
+    try {
+        $redirectString = route('checkout.openpay.callback');
+        $response = Http::withBasicAuth(config('services.openpay.private_key'), '')
+            ->post('https://sandbox-api.openpay.mx/v1/' . config('services.openpay.merchant_id') . '/charges', [
+                'method' => 'card',
+                'source_id' => $request->token_id,
+                'device_session_id' => $request->device_session_id,
+                'amount' => (float) $total,
+                'currency' => 'MXN',
+                'description' => 'Compra en Tienda ENVYCOM',
+                'redirect_url' => $redirectString,
+                'use_3d_secure' => true,
+                'customer' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ],
+            ]);
+
+        if ($response->failed()) {
+            $error = $response->json();
+            Log::warning('Intento fallido de pago Openpay: ' . ($error['description'] ?? 'Desconocido') . ' | Usuario ID: ' . $user->id);
+            return redirect()->route('checkout.payment')->with('error', 'Tarjeta declinada, comuníquese con su banco por favor.');
+        }
+
+        $charge = $response->json();
+        $chargeStatus = $charge['status'] ?? null;
+        $secureRedirectUrl = $charge['payment_method']['url'] ?? null;
+
+        if ($chargeStatus === 'charge_pending' && $secureRedirectUrl) {
+            session()->put('openpay_pending_checkout', [
+                'charge_id' => $charge['id'] ?? null,
+                'cart' => $cart,
+                'subtotal' => $subtotal,
+                'shipping_cost' => $costoEnvio,
+                'total' => $total,
+                'user_id' => $user->id,
+                'shipping_address' => session()->get('checkout_address', 'Direccion no registrada'),
+            ]);
+
+            return redirect()->away($secureRedirectUrl);
+        }
+
+        if ($chargeStatus === 'completed') {
+            $order = $this->finalizeSuccessfulPayment(
+                $user->id,
+                $cart,
+                (float) $subtotal,
+                (float) $costoEnvio,
+                (float) $total,
+                $charge['id'] ?? null,
+                session()->get('checkout_address', 'Direccion no registrada')
+            );
+
+            $this->sendOrderConfirmationEmail($order, $user->id);
+
+            session()->forget(['cart', 'checkout_address', 'openpay_pending_checkout']);
+            
+            // REDIRECCIÓN ACTUALIZADA:
+            // Se envía el ID del pedido a la ruta de detalle en el perfil
+            return redirect()->route('profile.pedido.detalle', $order->id)
+                ->with('success', '¡Pago exitoso! Tu folio es: ' . $order->order_number);
+        }
+
+        return redirect()->route('checkout.payment')->with('error', 'No fue posible confirmar el pago. Estado: ' . ($chargeStatus ?? 'desconocido'));
+    } catch (\Throwable $e) {
+        Log::critical('ERROR CRITICO EN PAGO OPENPAY: ' . $e->getMessage());
+        return redirect()->route('checkout.payment')->with('error', 'Hubo un problema al iniciar el pago. Intenta nuevamente.');
+    }
+}
 
     public function handle3DSecureReturn(Request $request)
     {
@@ -384,7 +383,7 @@ class CheckoutController extends Controller
                 session()->forget(['cart', 'checkout_address', 'openpay_pending_checkout']);
                 session()->put('last_order_id', $order->id);
 
-                return redirect()->route('pedido.confirmado')->with('success', 'Pago exitoso. Folio: ' . $order->order_number);
+                return redirect()->route('dashboard')->with('success', 'Pago exitoso. Folio: ' . $order->order_number);
             }
 
             session()->forget('openpay_pending_checkout');
