@@ -80,6 +80,6 @@ return [
         'Smx', 'Soft Restaurant', 'Sonnoc', 'Sonolife', 'Sony', 'Steelseries', 
         'Stylos', 'Swann', 'Targus', 'Tcl', 'Techzone', 'Thermaltake', 'Tp-link', 'Uni Paint',
         'Up', 'Urban Balance', 'Urovo', 'Valve', 'Vangogh', 'Vorago', 'Vortred',
-        'Xbox', 'Xiaomi', 'Xpg', 'Xzeal', 'Yaber', 'Yeyian', 'Yobekan'
+        'Xbox', 'Xiaomi', 'Xpg', 'Xzeal', 'Yaber', 'Yeyian', 'Yobekan', 'Lenovo'
     ],
 ];
