@@ -15,9 +15,9 @@
                 <h6 class="text-white mb-3 fw-bold">Navegación</h6>
                 <ul class="list-unstyled small">
                     <li class="mb-2"><a href="{{ url('/') }}" class="text-decoration-none text-white-50 hover-white">Inicio</a></li>
-                    <li class="mb-2"><a href="#" class="text-decoration-none text-white-50 hover-white">Laptops</a></li>
-                    <li class="mb-2"><a href="#" class="text-decoration-none text-white-50 hover-white">Desktops</a></li>
-                    <li class="mb-2"><a href="#" class="text-decoration-none text-white-50 hover-white">Impresoras</a></li>
+                    <li class="mb-2"><a href="{{ url('/productos') }}" class="text-decoration-none text-white-50 hover-white">Productos</a></li>
+                    <li class="mb-2"><a href="{{ url('/dashboard') }}" class="text-decoration-none text-white-50 hover-white">Mi perfil</a></li>
+                    <li class="mb-2"><a href="{{ url('/carrito') }}" class="text-decoration-none text-white-50 hover-white">Carrito de compras</a></li>
                 </ul>
             </div>
 
