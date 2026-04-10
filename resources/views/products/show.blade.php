@@ -137,8 +137,6 @@
                         <span class="brand-badge">{{ $product->marca ?? 'Sin marca' }}</span>
                         <h1 class="detail-title mb-3">{{ $product->nombre }}</h1>
 
-                        <h1 class="detail-title mb-3">{{ $product->nombre }}</h1>
-
                         <div class="detail-price">
                             ${{ number_format($product->precio, 2) }} <span class="fs-5 text-secondary">MXN</span>
                         </div>
@@ -163,9 +161,15 @@
                                 <li><strong>Categoría:</strong> {{ $product->categoria }} > {{ $product->subcategoria }}</li>
                                 <li>
                                     <strong>Disponibilidad:</strong>
-                                    <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">
-                                        Consultar stock en sucursales
-                                    </span>
+                                    @if($product->stock_disponible > 0)
+                                        <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">
+                                            <i class="bi bi-check-circle-fill me-1"></i> {{ $product->stock_disponible }} piezas en el país
+                                        </span>
+                                    @else
+                                        <span class="badge bg-danger bg-opacity-10 text-danger px-2 py-1 rounded-pill">
+                                            <i class="bi bi-x-circle-fill me-1"></i> Agotado
+                                        </span>
+                                    @endif
                                 </li>
                             </ul>
                         </div>

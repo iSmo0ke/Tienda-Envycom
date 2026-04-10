@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\WarehouseService;
 
 use App\Exceptions\StockInsuficienteException;
 
@@ -106,6 +107,7 @@ class CheckoutController extends Controller
 
         $user = Auth::user();
         $direccionSnapshot = '';
+        $estadoCliente = '';
 
         if ($request->address_id === 'new') {
 
@@ -147,6 +149,7 @@ class CheckoutController extends Controller
              $numeroExterior = $nuevaDireccion->numero_exterior ? ' ' . $nuevaDireccion->numero_exterior : '';
             $numeroInterior = $nuevaDireccion->numero_interior ? ' Int. ' . $nuevaDireccion->numero_interior : '';
             $referencias = $nuevaDireccion->referencias ?: 'Sin referencias';
+            $estadoCliente = $sepomex->state;
 
             $direccionSnapshot = "Recibe: 
             {$nuevaDireccion->receptor_name}. 
@@ -162,6 +165,7 @@ class CheckoutController extends Controller
             $sepomex = $direccionExistente->postalCode;
             $numeroExterior = $direccionExistente->numero_exterior ? ' ' . $direccionExistente->numero_exterior : '';
             $numeroInterior = $direccionExistente->numero_interior ? ' Int. ' . $direccionExistente->numero_interior : '';
+            $estadoCliente = $sepomex->state ?? 'N/D';
             $zipCode = $sepomex->zip_code ?? 'N/D';
             $settlement = $sepomex->settlement ?? 'N/D';
             $municipality = $sepomex->municipality ?? 'N/D';
@@ -179,6 +183,7 @@ class CheckoutController extends Controller
         }
 
         session()->put('checkout_address', $direccionSnapshot);
+        session()->put('checkout_state', $estadoCliente);
 
         return redirect()->route('checkout.payment');
     }
@@ -245,25 +250,44 @@ class CheckoutController extends Controller
         }
 
         $user = Auth::user();
+        $estadoCliente = session()->get('checkout_state', 'N/D');
+        $warehouseService = new WarehouseService();
 
         foreach ($cart as $item) {
             $producto = Product::find($item['id']);
 
-            if (!$producto || !$producto->activo) {
-                return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' ya no esta disponible.");
-            }
-
-            if ($producto->stock_disponible < $item['quantity']) {
-                return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' no tiene inventario suficiente.");
-            }
-
-            // ÚLTIMA BARRERA: Por si el catálogo de CT se actualizó mientras el usuario ponía su tarjeta
+            if (!$producto || !$producto->activo) return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' ya no esta disponible.");
             if ((float) $producto->precio !== (float) $item['price']) {
                 $cart[$item['id']]['price'] = $producto->precio;
                 session()->put('cart', $cart);
+                return redirect()->route('carrito')->with('error', 'El precio de algunos productos se ajustó al tipo de cambio actual. Verifica tu total.');
+            }
 
-                Log::alert("CAMBIO DE PRECIO O TIPO DE CAMBIO DETECTADO: Usuario ID {$user->id} intento pagar precio viejo.");
-                return redirect()->route('carrito')->with('error', 'El precio de algunos productos se ajustó de acuerdo al tipo de cambio actual. Por favor, verifica tu nuevo total antes de pagar.');
+            // LÓGICA FASE 2: VALIDACIÓN DE ALMACÉN Y STOCK EN TIEMPO REAL API
+            if ($producto->source === 'CT') {
+                $existenciasCT = $producto->existencia['total'] ?? [];
+                
+                // 1. Buscamos qué almacén nos va a surtir basado en el Estado del cliente
+                $mejorAlmacen = $warehouseService->getBestWarehouse($existenciasCT, $estadoCliente, $item['quantity']);
+                
+                if (!$mejorAlmacen) {
+                    return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' no tiene suficientes piezas en un solo almacén para surtir tu pedido completo.");
+                }
+
+                // 2. Validamos el stock EN VIVO con el API de CT
+                $isLiveStockOk = $warehouseService->checkLiveStock($producto->numParte, $mejorAlmacen, $item['quantity']);
+                
+                if (!$isLiveStockOk) {
+                    // Si el API dice que no hay, lo quitamos del carrito
+                    unset($cart[$item['id']]);
+                    session()->put('cart', $cart);
+                    return redirect()->route('carrito')->with('error', "Lo sentimos, el proveedor acaba de agotar el stock de '{$item['name']}'. Tu carrito fue actualizado.");
+                }
+            } else {
+                // Producto Local
+                if ($producto->stock_disponible < $item['quantity']) {
+                    return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' no tiene inventario local suficiente.");
+                }
             }
         }
 
@@ -405,31 +429,13 @@ class CheckoutController extends Controller
     }
 
     private function finalizeSuccessfulPayment(
-        int $userId,
-        array $cart,
-        float $subtotal,
-        float $shippingCost,
-        float $total,
-        ?string $chargeId,
-        string $shippingAddress
+        int $userId, array $cart, float $subtotal, float $shippingCost, float $total, ?string $chargeId, string $shippingAddress
     ): Order {
         return DB::transaction(function () use ($userId, $cart, $subtotal, $shippingCost, $total, $chargeId, $shippingAddress) {
-            if (empty($cart)) {
-                throw new \RuntimeException('No hay carrito para finalizar el pago.');
-            }
+            if (empty($cart)) throw new \RuntimeException('No hay carrito para finalizar el pago.');
 
-            foreach ($cart as $item) {
-                $producto = Product::find($item['id']);
-
-                if (!$producto || !$producto->activo) {
-                    throw new StockInsuficienteException("El producto {$item['name']} ya no esta disponible.");
-                }
-
-                
-                if ($producto->stock_disponible < (int) $item['quantity']) {
-                    throw new StockInsuficienteException("Stock insuficiente para {$producto->nombre}.");
-                }
-            }
+            $estadoCliente = session()->get('checkout_state', 'N/D');
+            $warehouseService = new WarehouseService();
 
             $order = Order::create([
                 'user_id' => $userId,
@@ -452,35 +458,20 @@ class CheckoutController extends Controller
                 ]);
 
                 $product = Product::find($item['id']);
+                if ($product->source === 'local') continue; 
 
-                if ($product->source === 'local') {
-                    continue; 
-                }
-
+                // Descuento Fase 2: Exacto al almacén enrutado
                 $actualStock = $product->existencia; 
-                $remainingToSubtract = (int) $item['quantity'];
-
                 if (isset($actualStock['total']) && is_array($actualStock['total'])) {
                     
-                    foreach ($actualStock['total'] as $warehouse => $qty) {
-                        if ($remainingToSubtract <= 0) {
-                            break;
-                        }
-
-                        $qty = (int) $qty;
-                        if ($qty <= 0) {
-                            continue;
-                        }
-
-                        $discount = min($qty, $remainingToSubtract);
-                        
-                        $actualStock['total'][$warehouse] = $qty - $discount;
-                        
-                        $remainingToSubtract -= $discount;
+                    $mejorAlmacen = $warehouseService->getBestWarehouse($actualStock['total'], $estadoCliente, $item['quantity']);
+                    
+                    if ($mejorAlmacen) {
+                        // Le restamos la cantidad comprada a ese almacén específico
+                        $actualStock['total'][$mejorAlmacen] -= $item['quantity'];
+                        $product->existencia = $actualStock;
+                        $product->save();
                     }
-
-                    $product->existencia = $actualStock;
-                    $product->save();
                 }
             }
 
