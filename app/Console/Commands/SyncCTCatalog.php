@@ -133,6 +133,8 @@ class SyncCTCatalog extends Command
                     'subcategoria' => $prod['subcategoria'] ?? null,
                     'descripcion_corta' => $prod['descripcion_corta'] ?? null,
                     'precio' => $prod['precio'] ?? 0,
+                    'moneda' => $prod['moneda'] ?? 'MXN',
+                    'tipo_cambio' => $prod['tipoCambio'] ?? 1,
                     'existencia' => isset($prod['existencia']) ? json_encode(['total' => $prod['existencia']]) : json_encode([]), 
                     'especificaciones' => isset($prod['especificaciones']) ? json_encode($prod['especificaciones']) : json_encode([]),
                     'promociones' => isset($prod['promociones']) ? json_encode($prod['promociones']) : json_encode([]),
@@ -155,6 +157,8 @@ class SyncCTCatalog extends Command
                     ['numParte'], // Columna única para identificar si ya existe
                     ['nombre', 
                     'precio', 
+                    'moneda',
+                    'tipo_cambio',
                     'existencia',
                     'subcategoria',
                     'promociones', 

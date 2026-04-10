@@ -195,23 +195,31 @@ class CheckoutController extends Controller
             return redirect()->route('checkout.index')->with('error', 'Por favor selecciona una dirección de envío.');
         }
 
-        $productosRemovidos = false;
+        // Cambiamos el nombre de la variable para englobar falta de stock o cambios de precio
+        $huboCambios = false;
 
         foreach ($cart as $id => $item) {
             // Buscamos el producto real en la base de datos
             $productoReal = Product::find($id);
 
-            // Revisamos si no existe, si está inactivo, O si ya no hay stock
+            // 1. Revisamos si no existe, si está inactivo, O si ya no hay stock
             if (!$productoReal || !$productoReal->activo || $productoReal->stock_disponible < $item['quantity']) {
                 unset($cart[$id]);
-                $productosRemovidos = true;
+                $huboCambios = true;
+            } else {
+                // 2. NUEVO: Validamos si el precio en la sesión es distinto al precio actual (MXN con tipo de cambio)
+                if ((float) $item['price'] !== (float) $productoReal->precio) {
+                    // Actualizamos el carrito con el precio más reciente
+                    $cart[$id]['price'] = $productoReal->precio;
+                    $huboCambios = true;
+                }
             }
         }
 
-        // Si quitamos algo, actualizamos la sesión y regresamos al cliente al carrito con un aviso
-        if ($productosRemovidos) {
+        // Si quitamos stock o actualizamos precios cambiarios, actualizamos la sesión y regresamos al cliente con un aviso
+        if ($huboCambios) {
             session()->put('cart', $cart);
-            return redirect()->route('carrito')->with('error', 'Lo sentimos, algunos productos de tu carrito se acaban de agotar y fueron removidos. Por favor, revisa tu pedido.');
+            return redirect()->route('carrito')->with('error', 'Tu carrito ha sido actualizado. Algunos productos se agotaron o sufrieron ajustes por el tipo de cambio. Por favor, revisa tu nuevo total.');
         }
 
         $subtotal = 0;
@@ -249,12 +257,13 @@ class CheckoutController extends Controller
                 return redirect()->route('carrito')->with('error', "El producto '{$item['name']}' no tiene inventario suficiente.");
             }
 
+            // ÚLTIMA BARRERA: Por si el catálogo de CT se actualizó mientras el usuario ponía su tarjeta
             if ((float) $producto->precio !== (float) $item['price']) {
                 $cart[$item['id']]['price'] = $producto->precio;
                 session()->put('cart', $cart);
 
-                Log::alert("CAMBIO DE PRECIO DETECTADO: Usuario ID {$user->id} intento pagar precio viejo.");
-                return redirect()->route('carrito')->with('error', 'Los precios de algunos productos han cambiado. Por favor, verifica tu total.');
+                Log::alert("CAMBIO DE PRECIO O TIPO DE CAMBIO DETECTADO: Usuario ID {$user->id} intento pagar precio viejo.");
+                return redirect()->route('carrito')->with('error', 'El precio de algunos productos se ajustó de acuerdo al tipo de cambio actual. Por favor, verifica tu nuevo total antes de pagar.');
             }
         }
 
@@ -273,6 +282,7 @@ class CheckoutController extends Controller
                     'method' => 'card',
                     'source_id' => $request->token_id,
                     'device_session_id' => $request->device_session_id,
+                    // Aquí mandamos el total validado final en MXN
                     'amount' => (float) $total,
                     'currency' => 'MXN',
                     'description' => 'Compra en Tienda ENVYCOM',
@@ -284,14 +294,11 @@ class CheckoutController extends Controller
                     ],
                 ]);
 
-        
-
             if ($response->failed()) {
                 $error = $response->json();
                 Log::warning('Intento fallido de pago Openpay: ' . ($error['description'] ?? 'Desconocido') . ' | Usuario ID: ' . $user->id);
                 return redirect()->route('checkout.payment')->with('error', 'Tarjeta declinada, comuníquese con su banco por favor.');
             }
-
 
             $charge = $response->json();
             $chargeStatus = $charge['status'] ?? null;

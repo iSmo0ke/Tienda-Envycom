@@ -137,9 +137,20 @@
                         <span class="brand-badge">{{ $product->marca ?? 'Sin marca' }}</span>
                         <h1 class="detail-title mb-3">{{ $product->nombre }}</h1>
 
+                        <h1 class="detail-title mb-3">{{ $product->nombre }}</h1>
+
                         <div class="detail-price">
                             ${{ number_format($product->precio, 2) }} <span class="fs-5 text-secondary">MXN</span>
                         </div>
+
+                        @if($product->moneda === 'USD')
+                            <div class="alert alert-warning d-flex align-items-center py-2 px-3 rounded-4 mb-4" style="background-color: #fff8dd; border: 1px solid #ffecb5; color: #856404; font-size: 0.9rem;">
+                                <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                                <div>
+                                    <strong>Precio sujeto a tipo de cambio.</strong> Este producto es de importación (USD). Su precio en MXN se actualiza automáticamente y podría variar ligeramente al momento de pagar.
+                                </div>
+                            </div>
+                        @endif
 
                         <p style="color: var(--envy-gray); line-height: 1.6; margin-bottom: 25px;">
                             {{ $product->descripcion_corta }}

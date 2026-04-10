@@ -2,11 +2,18 @@
 
 @php
     $subtotal = 0;
-    foreach ($cart as $item) {
+    $hasUsdProducts = false; // Bandera para saber si mostramos el disclaimer
+
+    foreach ($cart as $id => $item) {
         $subtotal += $item['price'] * $item['quantity'];
+        
+        // Verificamos si algún producto del carrito es cotizado en USD
+        $prod = \App\Models\Product::find($id);
+        if ($prod && $prod->moneda === 'USD') {
+            $hasUsdProducts = true;
+        }
     }
-    $envio = 0;
-    $total = $subtotal + $envio;
+    // El envío se calculará en el CheckoutController, no lo fijamos en 0 aquí.
 @endphp
 
 @section('content')
@@ -205,6 +212,16 @@
             </div>
         @endif
 
+        @if ($hasUsdProducts)
+            <div class="alert alert-warning rounded-4 shadow-sm border-0 d-flex align-items-center mb-4" style="background-color: #fff3cd; color: #856404;">
+                <i class="bi bi-currency-exchange fs-3 me-3 text-warning"></i>
+                <div>
+                    <h6 class="alert-heading fw-bold mb-1">Aviso de Tipo de Cambio</h6>
+                    <p class="mb-0 small">Tienes productos de importación en tu carrito. Los precios mostrados ya están convertidos a Pesos (MXN), pero <strong>podrían sufrir un reajuste en el último paso del Checkout</strong> si el dólar cambia antes de que finalices tu pago.</p>
+                </div>
+            </div>
+        @endif
+
         <div class="row g-4">
             <div class="col-lg-8">
                 @if (empty($cart) || count($cart) === 0)
@@ -218,13 +235,13 @@
                     </div>
                 @else
                     <div class="cart-card">
-                        @foreach ($cart as $item)
+                        @foreach ($cart as $id => $item)
                             <div class="cart-item">
                                 <div class="row align-items-center g-3">
                                     
                                     <div class="col-md-2 col-4 d-flex justify-content-center">
                                         <x-product-image 
-                                            :image="$item['image']" 
+                                            :image="$item['image'] ?? null" 
                                             :alt="$item['name']"
                                             cssClass="product-img" 
                                         />
@@ -270,7 +287,6 @@
                     </div>
                 @endif
             </div>
-
             <div class="col-lg-4">
                 <div class="summary-card">
                     <h3 class="summary-title mb-4">Resumen del pedido</h3>
@@ -282,21 +298,25 @@
 
                     <div class="summary-row">
                         <span>Envío</span>
-                        <span>
-                            @if ($envio == 0)
-                                Gratis
-                            @else
-                                ${{ number_format($envio, 2) }}
-                            @endif
+                        <span class="text-secondary" style="font-size: 0.9rem;">
+                            Se calculará en el pago
                         </span>
                     </div>
 
                     <hr>
 
                     <div class="summary-row summary-total">
-                        <span>Total</span>
-                        <span>${{ number_format($total, 2) }}</span>
+                        <span>Total Estimado</span>
+                        <span>${{ number_format($subtotal, 2) }}</span>
                     </div>
+
+                    @if ($hasUsdProducts)
+                        <div class="text-center mt-2 mb-3">
+                            <small class="text-muted" style="font-size: 0.75rem;">
+                                *El total final será confirmado en la pantalla de pago sumando envío y ajustando tipo de cambio si aplica.
+                            </small>
+                        </div>
+                    @endif
 
                     <div class="d-grid mt-4">
                         <a href="{{ url('/checkout') }}" class="btn btn-cart-primary btn-lg text-center">

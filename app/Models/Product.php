@@ -11,7 +11,7 @@ class Product extends Model
     protected $fillable = [
         'idProducto', 'numParte', 'nombre', 'modelo', 'marca', 
         'subcategoria', 'categoria', 'descripcion_corta', 'activo', 
-        'existencia', 'precio', 'especificaciones', 'promociones', 'imagen', 'source'
+        'existencia', 'precio', 'moneda', 'tipo_cambio', 'especificaciones', 'promociones', 'imagen', 'source'
     ];
 
     protected $casts = [
@@ -23,9 +23,18 @@ class Product extends Model
 
     public function getPrecioAttribute($value)
     {
-        $centavosBase = (int) round($value * 100);
+        // 1. Obtener precio base en pesos
+        $precioBaseMXN = $value;
+        if ($this->moneda === 'USD') {
+            $tipoCambio = $this->tipo_cambio > 0 ? $this->tipo_cambio : 18.00; // Fallback de seguridad
+            $precioBaseMXN = $value * $tipoCambio;
+        }
+
+        // 2. Aplicar lógica actual con MoneyPHP
+        $centavosBase = (int) round($precioBaseMXN * 100);
         $dinero = new Money($centavosBase, new Currency('MXN'));
         $precioConMargen = $dinero->multiply('1.6427');
+        
         return $precioConMargen->getAmount() / 100;
     }
 
